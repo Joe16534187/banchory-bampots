@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Banchory Bampots</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #16241a; --ink: #f4efe0; box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1a13; } }
+  :root[data-theme="dark"] { --bg: #0f1a13; }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); overflow: hidden; font-family: 'Bangers', Impact, 'Arial Narrow Bold', sans-serif; }
+  canvas { display: block; width: 100%; height: 100%; outline: none; touch-action: none; }
+  .preload { position: absolute; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<span class="preload" aria-hidden="true">Banchory</span>
+<canvas id="game" tabindex="0" aria-label="Banchory Bampots: a top-down driving game set in Banchory. It needs a keyboard."></canvas>
+<!-- Plain scripts sharing one global scope; load order matters. Run ./build.sh for a single self-contained file. -->
+<script src="src/01_core.js"></script>
+<script src="src/02_map_1.js"></script>
+<script src="src/02_map_2.js"></script>
+<script src="src/02_map_3.js"></script>
+<script src="src/02_map_4.js"></script>
+<script src="src/03_entities_1.js"></script>
+<script src="src/03_entities_2.js"></script>
+<script src="src/03_entities_3.js"></script>
+<script src="src/03_entities_4.js"></script>
+<script src="src/03_entities_5.js"></script>
+<script src="src/04_missions_1.js"></script>
+<script src="src/04_missions_2.js"></script>
+<script src="src/05_render_1.js"></script>
+<script src="src/05_render_2.js"></script>
+<script src="src/05_render_3.js"></script>
+<script src="src/05_render_4.js"></script>
+<script src="src/05_render_5.js"></script>
+<script src="src/05_render_6.js"></script>
+<script src="src/06_audio.js"></script>
+<script src="src/07_main.js"></script>
+</body>
+</html>
