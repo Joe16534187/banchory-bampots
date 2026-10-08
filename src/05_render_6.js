@@ -18,7 +18,7 @@ function drawBoxOverlay() {
   ctx.drawImage(boxCanvas, 0, 0, W, H);
 }
 function drawControls(x, y, size) {
-  const rows = [['Arrows / WASD', 'Walk, or drive (up is go, down is brake)'], ['Enter / E', 'Get in or oot of a motor'], ['Space', 'Handbrake in a motor. Use your weapon on foot'], ['Q or 1 to 5', 'Switch weapon'], ['Shift', 'Nitro, if you ever find the Pzazz'], ['H', 'Horn (jingle in the ice cream van)'], ['M', 'Map'], ['P', 'Pause'], ['N', 'Sound on or off']];
+  const rows = [['Arrows / WASD', 'Walk, or drive (up is go, down is brake)'], ['Enter / E', 'Get in or oot of a motor'], ['Space', 'Handbrake in a motor. Use your weapon on foot'], ['Q or 1 to 5', 'Switch weapon'], ['T', "Go in: pubs, Dod's Motors, a man in the woods"], ['Shift', 'Nitro, if you ever find the Pzazz'], ['H', 'Horn (jingle in the ice cream van)'], ['M', 'Map'], ['P', 'Pause'], ['N', 'Sound on or off']];
   rows.forEach((r, i) => { otext(r[0], x - 12, y + i * size * 1.5, size, COL.yellow, 'right', 3.5); otext(r[1], x + 12, y + i * size * 1.5, size, '#f4efe0', 'left', 3.5); });
 }
 function drawTitle() {
@@ -29,46 +29,52 @@ function drawTitle() {
   ctx.font = size + 'px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#b3261e'; ctx.fillText('BANCHORY BAMPOTS', 6, size * 0.3 + 7); otext('BANCHORY BAMPOTS', 0, size * 0.3, size, COL.yellow, 'center', size * 0.12);
   ctx.restore();
   otext('A wee crime caper on Royal Deeside', W / 2, by + size * 0.95 + 16, clamp(size * 0.3, 18, 34), '#f4efe0');
-  const cs = clamp(H / 46, 13, 20); drawControls(W / 2 - Math.min(W * 0.14, 120), H * 0.5, cs);
-  if (Math.sin(t * 4) > -0.3) otext('Press Enter to start', W / 2, H * 0.5 + cs * 1.5 * 9 + 30, clamp(size * 0.42, 24, 46), '#8dff6b');
+  const cs = clamp(H / 50, 12, 19); drawControls(W / 2 - Math.min(W * 0.14, 120), H * 0.48, cs);
+  if (Math.sin(t * 4) > -0.3) otext('Press Enter to start', W / 2, H * 0.48 + cs * 1.5 * 10 + 30, clamp(size * 0.42, 24, 46), '#8dff6b');
   otext('Click the game once if the keys do nothing. Answer a ringing phone box for a job.', W / 2, H - 22, clamp(cs * 0.95, 13, 18), '#cfd8c8', 'center', 3);
 }
 function drawPause() {
   ctx.fillStyle = 'rgba(10,20,14,0.8)'; ctx.fillRect(0, 0, W, H);
   otext('PAUSED', W / 2, H * 0.2, Math.min(90, W / 8), COL.yellow);
-  const cs = clamp(H / 44, 13, 20); drawControls(W / 2 - Math.min(W * 0.14, 120), H * 0.3, cs);
-  const y = H * 0.3 + cs * 1.5 * 9 + 20, jobs = MISSIONS.filter(d => G.done[d.id]).length;
+  const cs = clamp(H / 46, 12, 19); drawControls(W / 2 - Math.min(W * 0.14, 120), H * 0.29, cs);
+  const y = H * 0.29 + cs * 1.5 * 10 + 20, jobs = MISSIONS.filter(d => G.done[d.id]).length;
   otext('Jobs done ' + jobs + ' of ' + MISSIONS.length + '      Golden rowies ' + Object.keys(G.rowies).length + ' of ' + ROWIES.length, W / 2, y, cs * 1.2, '#8dff6b');
   otext('R: put me back on the nearest road      X twice: wipe saved progress', W / 2, y + cs * 2, cs, '#f4efe0');
   otext('Press P or Enter to carry on', W / 2, y + cs * 4.4, cs * 1.4, '#fff');
 }
 function drawMap() {
   ctx.fillStyle = 'rgba(10,20,14,0.92)'; ctx.fillRect(0, 0, W, H);
-  const k = Math.min((W - 40) / WW, (H - 110) / WH), mw = WW * k, mh = WH * k, mx = (W - mw) / 2, my = 64, P = player;
+  const k = Math.min((W - 40) / WW, (H - 132) / WH), mw = WW * k, mh = WH * k, mx = (W - mw) / 2, my = 64, P = player;
   otext('Banchory', mx, 46, 40, COL.yellow, 'left'); otext('M to close', mx + mw, 46, 20, '#f4efe0', 'right', 3.5);
   ctx.imageSmoothingEnabled = true; ctx.drawImage(mapCanvas, mx, my, mw, mh); ctx.strokeStyle = '#141414'; ctx.lineWidth = 4; ctx.strokeRect(mx, my, mw, mh);
   const fs = clamp(W / 80, 10, 15);
-  const lo = { burnett: [-6, -16], stag: [26, 20], douglas: [-36, 20], cc: [-58, 26], polis: [-10, 22], kirk: [-52, -12], feugh: [84, -24], health: [44, -10], lodge: [56, 10], golf: [-10, 22], tower: [0, 22], skinner: [0, -14], garage: [20, 22], scout: [-50, 8], tor: [0, -14], academy: [42, -16], primary: [-62, -28], shop: [0, -14], barn: [0, -12], farm: [30, 18], turkey: [0, -12] };
+  const lo = { burnett: [-6, -16], stag: [26, 20], douglas: [-36, 20], cc: [-58, 26], polis: [-10, 22], kirk: [-52, -12], feugh: [84, -24], health: [44, -10], lodge: [56, 10], golf: [-10, 22], tower: [0, 22], skinner: [0, -14], garage: [20, 22], scout: [-50, 8], tor: [0, -14], academy: [42, -16], primary: [-62, -28], shop: [0, -14], barn: [0, -12], farm: [30, 18], turkey: [0, -12], glen: [0, -14] };
   ctx.strokeStyle = 'rgba(20,20,20,0.7)'; ctx.lineWidth = 1.5;
   for (const key in LM) { const b = LM[key], o = lo[key] || [0, -3], bx = mx + (b.x + b.w / 2) * k, byy = my + (b.y + b.h / 2) * k; if (lo[key]) { ctx.beginPath(); ctx.moveTo(bx, byy); ctx.lineTo(bx + o[0] * 0.6, byy + o[1] * 0.6); ctx.stroke(); } otext(b.lm, bx + o[0], byy + o[1] + (o[1] >= 0 ? fs * 0.4 : -2), fs, '#fff', 'center', 3); }
   for (const l of MAP_LABELS) otext(l.name, mx + l.x * k, my + l.y * k, fs * 1.1, l.name.startsWith('To ') ? '#ffd9a0' : '#d8f0c8', 'center', 3);
   for (const d of MISSIONS) { const x = mx + d.phone.x * k, y = my + d.phone.y * k; ctx.fillStyle = G.done[d.id] ? '#9fe08a' : COL.yellow; ctx.strokeStyle = '#141414'; ctx.lineWidth = 2; circ(x, y, 7); ctx.fill(); ctx.stroke(); }
+  for (const s of SHOPS) { ctx.fillStyle = s.col; ctx.strokeStyle = '#141414'; ctx.lineWidth = 1.5; circ(mx + s.at.x * k, my + s.at.y * k, 4.5); ctx.fill(); ctx.stroke(); }
   for (const p of pickups) if (p.type === 'rowie' && p.gone) { ctx.fillStyle = '#e7ae4e'; circ(mx + p.x * k, my + p.y * k, 3.5); ctx.fill(); }
   const tg = targetPos(); if (tg) { ctx.fillStyle = '#ff4fa3'; ctx.strokeStyle = '#141414'; circ(mx + tg.x * k, my + tg.y * k, 7 + Math.sin(G.t * 6) * 2); ctx.fill(); ctx.stroke(); }
   ctx.save(); ctx.translate(mx + P.x * k, my + P.y * k); ctx.rotate(P.a); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#141414'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-8, -8); ctx.lineTo(-4, 0); ctx.lineTo(-8, 8); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
   const ly = my + mh + 26; ctx.fillStyle = COL.yellow; circ(mx + 8, ly - 5, 6); ctx.fill(); otext('Phone box with a job', mx + 22, ly, 16, '#f4efe0', 'left', 3);
   ctx.fillStyle = '#9fe08a'; circ(mx + 208, ly - 5, 6); ctx.fill(); otext('Job done', mx + 222, ly, 16, '#f4efe0', 'left', 3);
   ctx.fillStyle = '#e7ae4e'; circ(mx + 318, ly - 5, 4); ctx.fill(); otext('Rowie found (' + Object.keys(G.rowies).length + '/' + ROWIES.length + ')', mx + 330, ly, 16, '#f4efe0', 'left', 3);
+  const ly2 = ly + 22; ctx.strokeStyle = '#141414'; ctx.lineWidth = 1.5;
+  ctx.fillStyle = '#ffb347'; circ(mx + 8, ly2 - 5, 5); ctx.fill(); ctx.stroke(); otext('Pub: pints and stovies', mx + 22, ly2, 16, '#f4efe0', 'left', 3);
+  ctx.fillStyle = '#c58cff'; circ(mx + 208, ly2 - 5, 5); ctx.fill(); ctx.stroke(); otext('Big Eck: weapons', mx + 222, ly2, 16, '#f4efe0', 'left', 3);
+  ctx.fillStyle = '#7dff8a'; circ(mx + 368, ly2 - 5, 5); ctx.fill(); ctx.stroke(); otext("Dod's Motors", mx + 382, ly2, 16, '#f4efe0', 'left', 3);
 }
 function render() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = 1;
   ctx.fillStyle = COL.grass; ctx.fillRect(0, 0, W, H);
   const z = cam.z, sk = REDUCE_MOTION ? 0 : G.shake, sx = (Math.random() - 0.5) * sk, sy = (Math.random() - 0.5) * sk;
-  ctx.setTransform(DPR * z, 0, 0, DPR * z, DPR * (W / 2 - cam.x * z + sx), DPR * (H / 2 - cam.y * z + sy));
+  const tp = REDUCE_MOTION || G.state === 'title' ? 0 : Math.min(player.tipsy, 4);                 // a few pints in, the whole toon sways
+  ctx.translate(W / 2 + sx + Math.sin(G.t * 0.8) * 3 * tp, H / 2 + sy); ctx.rotate(Math.sin(G.t * 1.15) * 0.011 * tp); ctx.scale(z, z); ctx.translate(-cam.x, -cam.y);
   drawWorld();
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (G.state === 'title') { drawTitle(); return; }
   if (player.box) drawBoxOverlay();
   drawBubbles(); drawHUD();
-  if (G.state === 'pause') drawPause(); else if (G.state === 'map') drawMap();
+  if (G.state === 'pause') drawPause(); else if (G.state === 'map') drawMap(); else if (G.state === 'shop') drawShop();
 }

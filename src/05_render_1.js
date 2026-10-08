@@ -34,6 +34,7 @@ function buildMapCanvas() {
   const m = mapCanvas.getContext('2d'); m.scale(MS, MS);
   m.fillStyle = '#7fb866'; m.fillRect(0, 0, WW, WH);
   for (const a of AREAS) { m.fillStyle = a.kind === 'field' ? (a.crop === 'barley' ? '#d6c56e' : a.crop === 'plough' ? '#98795a' : '#8cc66c') : a.kind === 'golf' ? '#9bd67e' : '#93d274'; m.fillRect(a.x, a.y, a.w, a.h); }
+  m.fillStyle = '#a9e08a'; m.beginPath(); m.ellipse(CRICKET.x, CRICKET.y, CRICKET.rx, CRICKET.ry, 0, 0, TAU); m.fill();
   m.fillStyle = '#4c8a48'; m.beginPath(); m.arc(SCOLTY.x, SCOLTY.y, SCOLTY.r, 0, TAU); m.fill(); m.fillStyle = '#8b6f9a'; m.beginPath(); m.arc(SCOLTY.x, SCOLTY.y, SCOLTY.r * 0.22, 0, TAU); m.fill();
   m.fillStyle = 'rgba(40,100,55,0.55)'; for (const t of TREES) { m.beginPath(); m.arc(t.x, t.y, t.r, 0, TAU); m.fill(); }
   m.lineCap = 'round'; m.lineJoin = 'round';
@@ -65,11 +66,10 @@ function drawGround() {
       ctx.strokeStyle = '#2f6b3a'; ctx.lineWidth = 9; ctx.strokeRect(a.x, a.y, a.w, a.h);
     } else if (a.kind === 'park') {
       ctx.fillStyle = '#7fc862'; rr(a.x, a.y, a.w, a.h, 26); ctx.fill(); ctx.strokeStyle = '#5aa548'; ctx.lineWidth = 6; ctx.stroke();
-      ctx.strokeStyle = '#dccb9e'; ctx.lineWidth = 16; rr(a.x + 70, a.y + 70, a.w - 140, a.h - 140, 60); ctx.stroke();
-      if (a.pitch) { const px = a.x + a.w * 0.3, py = a.y + a.h * 0.28, pw = a.w * 0.5, ph = a.h * 0.46; ctx.fillStyle = '#72ba58'; ctx.fillRect(px, py, pw, ph); drawPitchLines(px, py, pw, ph); }
+      if (a.pitch) drawCricket();                                        // Burnett Park: home of Banchory Cricket Club
       else {
-        const b = SPOTS.spadeBed; ctx.fillStyle = '#6b4a2b'; ctx.beginPath(); ctx.ellipse(b.x, b.y, 44, 28, 0, 0, TAU); ctx.fill();
-        const fl = ['#f25f5c', '#ffe066', '#f7a8d0', '#fff']; for (let i = 0; i < 14; i++) { ctx.fillStyle = fl[i % 4]; circ(b.x + Math.cos(i * 2.4) * (12 + (i * 7) % 26), b.y + Math.sin(i * 2.4) * (8 + (i * 5) % 16), 3.2); ctx.fill(); }
+        ctx.strokeStyle = '#dccb9e'; ctx.lineWidth = 16; rr(a.x + 70, a.y + 70, a.w - 140, a.h - 140, 60); ctx.stroke();
+        drawFlowerBed(BELL_BED.x, BELL_BED.y);
         const pg = M(2790, 1880); ctx.fillStyle = '#d98b4a'; rr(pg.x, pg.y, 150, 110, 12); ctx.fill();
         ctx.strokeStyle = '#3b6fb0'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(pg.x + 20, pg.y + 22); ctx.lineTo(pg.x + 90, pg.y + 22); ctx.stroke(); ctx.fillStyle = '#222'; ctx.fillRect(pg.x + 32, pg.y + 16, 12, 12); ctx.fillRect(pg.x + 66, pg.y + 16, 12, 12);
         ctx.fillStyle = '#c8322b'; circ(pg.x + 108, pg.y + 74, 22); ctx.fill(); ctx.strokeStyle = '#ffd21f'; ctx.lineWidth = 3; ctx.beginPath(); for (let i = 0; i < 3; i++) { const an = t * 0.8 + i * TAU / 6; ctx.moveTo(pg.x + 108 - Math.cos(an) * 22, pg.y + 74 - Math.sin(an) * 22); ctx.lineTo(pg.x + 108 + Math.cos(an) * 22, pg.y + 74 + Math.sin(an) * 22); } ctx.stroke();
@@ -96,7 +96,8 @@ function drawGround() {
   // tarmac yards and car parks
   for (const h of HARD) {
     if (!vis(h)) continue;
-    ctx.fillStyle = h.kind === 'play' ? '#7d828b' : h.kind === 'carpark' ? '#5c6068' : h.kind === 'square' ? '#c9c2b4' : '#6c6f75'; ctx.fillRect(h.x, h.y, h.w, h.h);
+    ctx.fillStyle = h.kind === 'play' ? '#7d828b' : h.kind === 'carpark' ? '#5c6068' : h.kind === 'square' ? '#c9c2b4' : h.kind === 'rubble' ? '#8d897b' : '#6c6f75'; ctx.fillRect(h.x, h.y, h.w, h.h);
+    if (h.kind === 'rubble') drawRubble(h);
     if (h.kind === 'square') { ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = 1.5; ctx.beginPath(); for (let x = h.x + 24; x < h.x + h.w; x += 24) { ctx.moveTo(x, h.y); ctx.lineTo(x, h.y + h.h); } for (let y = h.y + 24; y < h.y + h.h; y += 24) { ctx.moveTo(h.x, y); ctx.lineTo(h.x + h.w, y); } ctx.stroke(); }
     if (h.kind === 'carpark') { ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i <= h.bays; i++) { const x = h.bx0 + i * 38; ctx.moveTo(x, h.y + 3); ctx.lineTo(x, h.y + 58); ctx.moveTo(x, h.y + h.h - 58); ctx.lineTo(x, h.y + h.h - 3); } ctx.stroke(); }
     if (h.kind === 'play') {

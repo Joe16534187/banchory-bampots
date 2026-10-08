@@ -3,6 +3,7 @@
 const SHIRTS = ['#c8322b', '#2f66b3', '#e8e4da', '#3b3f46', '#1f7a4d', '#d9a521', '#7a3fa0', '#d86a1e', '#56b6c9', '#9a2f5a', '#6b7a3a', '#8a5a2b'];
 const OUCH = ['Jings!', 'Michty me!', 'Help ma boab!', 'Ya bampot!', 'Watch it, min!', 'Fit ye daein?!', 'Crivvens!', 'Ooyah!', 'Mind yersel!', 'Aye, very good.'];
 const HIKE = ['Fine view!', 'Nearly there.', 'Is it far?', 'Ma legs!', 'Braw day for it.', 'Mind the roots.'];
+const HOWZAT = ['Howzat!', 'Owzat!', 'Catch it!', 'Good shot.', 'No ball!', 'Tea yet?', 'Leg before, surely.', 'Mind the square!'];
 const CHAT = ['Fit like?', 'Nae bad.', 'Affa weather.', 'Foos yer doos?', 'Aye, peckin awa.', 'Braw day.', 'Chavvin awa.'];
 function makePed(x, y, kind) {
   const p = { x, y, a: rnd(TAU), kind: kind || 'ped', state: 'walk', t: 0, vx: 0, vy: 0, z: 0, vz: 0, rot: 0, rv: 0, spd: rnd(34, 52), e: null, dir: 1, sw: 1, bub: null, walk: rnd(TAU), flee: 0, chatT: rnd(4, 30),
@@ -20,7 +21,7 @@ function knockPed(p, vx, vy, byPlayer) {
 }
 function spawnPed() {
   const f = focusPos(); let n = 0;
-  for (const p of peds) if (p.kind === 'ped') n++;
+  for (const p of peds) if (p.kind === 'ped' && !p.home && !p.stay) n++;
   if (n >= 26) return;
   for (let tries = 0; tries < 6; tries++) {
     const e = pick(EDGES); if (!e.peds) continue;
@@ -47,12 +48,16 @@ function updatePed(p, dt) {
     }
     return;
   }
-  if (p.state === 'down') { p.t -= dt; if (p.t <= 0) { p.state = p.home ? 'wander' : p.kind === 'stag' ? 'wait' : 'walk'; p.flee = 3.5; p.rot = 0; if (p.kind === 'ped' && Math.random() < 0.5) say(p, pick(['Ya bampot!', 'Polis!', 'Aye, right!', "I'm fine. I'm fine."])); } return; }
+  if (p.state === 'down') { p.t -= dt; if (p.t <= 0) { p.state = p.home ? 'wander' : p.kind === 'stag' || p.stay ? 'wait' : 'walk'; p.flee = 3.5; p.rot = 0; if (p.kind === 'ped' && Math.random() < 0.5) say(p, p.dealer ? pick(['Nae discount for that.', 'Prices just went up.', 'Cheeky.']) : p.cricketer ? pick(['Not cricket, that.', 'Pitch invader!', 'Umpire!']) : pick(['Ya bampot!', 'Polis!', 'Aye, right!', "I'm fine. I'm fine."])); } return; }
   if (p.flee > 0) p.flee -= dt;
-  if (p.state === 'wait') { const dx = player.x - p.x, dy = player.y - p.y; p.a += angDiff(p.a, Math.atan2(dy, dx)) * Math.min(1, dt * 4); p.walk += dt * 2; return; }
+  if (p.state === 'wait') {
+    if (p.post && hyp(p.post.x - p.x, p.post.y - p.y) > 5) { const qx = p.post.x - p.x, qy = p.post.y - p.y, q = hyp(qx, qy); p.x += qx / q * 60 * dt; p.y += qy / q * 60 * dt; p.a = Math.atan2(qy, qx); p.walk += dt * 13; return; }      // back to the stall
+    const dx = player.x - p.x, dy = player.y - p.y; p.a += angDiff(p.a, Math.atan2(dy, dx)) * Math.min(1, dt * 4); p.walk += dt * 2; return;
+  }
   let tx, ty, spd = p.spd * (p.flee > 0 ? 2.5 : 1);
   if (p.state === 'wander') {
     p.t -= dt; if (p.t <= 0 || p.tx === undefined) { p.tx = p.home.x + rnd(30, p.home.w - 30); p.ty = p.home.y + rnd(30, p.home.h - 30); p.t = rnd(3, 9); p.idle = Math.random() < 0.5 ? rnd(1, 4) : 0; }
+    if (p.cricketer) { p.chatT -= dt; if (p.chatT <= 0) { p.chatT = rnd(9, 30); if (onScreen(p.x, p.y)) say(p, pick(HOWZAT)); } }
     if (p.idle > 0 && p.flee <= 0) { p.idle -= dt; return; }
     tx = p.tx; ty = p.ty; if (hyp(tx - p.x, ty - p.y) < 8) { p.t = 0; return; }
     spd *= 0.6;
@@ -118,12 +123,13 @@ function enterCar(c) {
   if (c.ai) {
     const p = makePed(c.x - Math.sin(c.a) * (c.sp.w / 2 + 10), c.y + Math.cos(c.a) * (c.sp.w / 2 + 10));
     p.state = 'fly'; p.vx = -Math.sin(c.a) * 90; p.vy = Math.cos(c.a) * 90; p.vz = 120; p.z = 1; p.rv = rnd(-6, 6); p.flee = 5;
-    say(p, pick(['Ma motor!', "That's ma car, min!", 'Thief!', 'Polis!'])); addHeat(c.type === 'police' ? 1.5 : 0.6); c.ai = null;
+    say(p, pick(['Ma motor!', "That's ma car, min!", 'Thief!', 'Polis!'])); addHeat(c.sp.cop ? 1.5 : 0.6); c.ai = null;
   }
   c.driver = 'player'; c.siren = false; P.car = c; P.vx = P.vy = 0;
   G.vehName = c.sp.name; G.vehT = 2.6; AudioFX.door();
   if (c.sp.boat) { c.moored = false; hint('UP to paddle, LEFT and RIGHT to steer. The river does the rest.', 4.5); }
   if (c.type === 'pzazz' && !c.dead) { bigText('THE PZAZZ!', 'You found it. Hold SHIFT for nitro', '#ff7ad1', 3.6); AudioFX.pass(); }
+  if (c.sp.tank && !c.dead) { bigText('A TANK!', 'H fires the big gun. Mind the neighbours', '#a9c078', 3.6); c.turret = c.a; c.fireT = 0.5; }
   if (c.dead) hint("This one's deid");
   missionEvent('enter', c);
 }

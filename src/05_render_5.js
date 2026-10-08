@@ -11,6 +11,7 @@ function drawBubbles() {
   ctx.globalAlpha = 1;
   for (const f of floaters) { const s = toScreen(f.x, f.y); ctx.globalAlpha = Math.min(1, f.t * 2); otext(f.text, s.x, s.y - (1.5 - f.t) * 34, 20, f.col, 'center', 4); }
   ctx.globalAlpha = 1;
+  const dl = G.dealer; if (dl && G.state === 'play' && dl.state === 'wait' && onScreen(dl.x, dl.y, 0) && G.nearShop !== DEALER) { const s = toScreen(dl.x, dl.y); otext('Big Eck', s.x, s.y - 26 * cam.z - 6, 16, '#d9c8ff', 'center', 3.5); }
   // "RING RING" over nearby phones
   if (!G.mission && G.state === 'play') for (const d of MISSIONS) { const ph = d.phone; if (!onScreen(ph.x, ph.y, 0)) continue; const s = toScreen(ph.x, ph.y); if (Math.sin(G.t * 9) > -0.2) otext(G.done[d.id] ? d.title + ' (again?)' : d.title, s.x, s.y - 30 * cam.z - 8, 18, '#ffd21f', 'center', 4); }
 }
@@ -31,8 +32,10 @@ function drawRadar() {
   const sx = P.x * MS - rw / 2, sy = P.y * MS - rh / 2; ctx.globalAlpha = 0.95; ctx.drawImage(mapCanvas, -sx + rx, -sy + ry); ctx.globalAlpha = 1;
   const blip = (x, y, col, r, edge) => { let bx = (x - P.x) * MS, by = (y - P.y) * MS; if (edge) { bx = clamp(bx, -rw / 2 + 7, rw / 2 - 7); by = clamp(by, -rh / 2 + 7, rh / 2 - 7); } else if (Math.abs(bx) > rw / 2 || Math.abs(by) > rh / 2) return; ctx.fillStyle = col; ctx.strokeStyle = '#141414'; ctx.lineWidth = 1.5; circ(rx + rw / 2 + bx, ry + rh / 2 + by, r); ctx.fill(); ctx.stroke(); };
   if (!G.mission) for (const d of MISSIONS) blip(d.phone.x, d.phone.y, G.done[d.id] ? '#9fe08a' : '#ffd21f', 5, true);
-  blip(SPOTS.respray.x, SPOTS.respray.y, '#7dff8a', 3.5, false);
-  for (const c of cars) if (c.type === 'police' && c.ai && c.ai.mode === 'chase') blip(c.x, c.y, Math.sin(G.t * 14) > 0 ? '#5ab4ff' : '#fff', 4, false);
+  for (const s of SHOPS) blip(s.at.x, s.at.y, s.col, s.kind === 'pub' ? 2.8 : 3.5, false);
+  const fl = Math.sin(G.t * 14) > 0;
+  for (const c of cars) if (c.sp.cop && c.ai && c.ai.mode === 'chase') blip(c.x, c.y, fl ? (c.type === 'tank' || c.type === 'jeep' ? '#a9c078' : '#5ab4ff') : '#fff', c.sp.tank ? 5.5 : c.type === 'polvan' ? 4.8 : 4, false);
+  for (const h of helis) if (!h.leave) { blip(h.x, h.y, fl ? '#fff' : '#ff5a4a', 5, true); }
   const tg = targetPos(); if (tg) blip(tg.x, tg.y, '#ff4fa3', 5 + Math.sin(G.t * 6), true);
   ctx.translate(rx + rw / 2, ry + rh / 2); ctx.rotate(P.a); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#141414'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-6, -5.5); ctx.lineTo(-3, 0); ctx.lineTo(-6, 5.5); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.restore();
@@ -44,6 +47,7 @@ function drawHUD() {
   // money, hearts, stars
   otext('£' + Math.round(G.money).toLocaleString('en-GB'), W - 18, 44 * u, 38 * u, COL.yellow, 'right');
   for (let i = 0; i < 5; i++) { heart(W - 30 - (4 - i) * 26 * u, 66 * u, 9 * u); ctx.fillStyle = i < P.hp ? '#ff4d4d' : 'rgba(20,20,20,0.55)'; ctx.fill(); ctx.strokeStyle = '#141414'; ctx.lineWidth = 2.5; ctx.stroke(); }
+  for (let i = 0; i < P.armour; i++) { shield(W - 30 - 4 * 26 * u - 30 * u - i * 21 * u, 64 * u, 8 * u); ctx.fillStyle = '#b08d57'; ctx.fill(); ctx.strokeStyle = '#141414'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.strokeStyle = 'rgba(60,40,15,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(W - 30 - 4 * 26 * u - 30 * u - i * 21 * u, 57 * u); ctx.lineTo(W - 30 - 4 * 26 * u - 30 * u - i * 21 * u, 73 * u); ctx.stroke(); }
   if (G.stars > 0 || G.heat > 0.5) for (let i = 0; i < 4; i++) { const on = i < G.stars; ctx.fillStyle = on ? (Math.sin(t * 12 + i) > 0 ? '#5ab4ff' : '#fff') : 'rgba(20,20,20,0.5)'; star(W - 32 - (3 - i) * 28 * u, 98 * u, 12 * u); ctx.strokeStyle = '#141414'; ctx.lineWidth = 2.5; ctx.stroke(); }
   if (G.nickT > 0.12 && G.nickLim) {
     const k = clamp(G.nickT / G.nickLim, 0, 1), bw = 240 * u, bx = W / 2 - bw / 2, by = H * 0.3 + 10;
@@ -75,7 +79,7 @@ function drawHUD() {
     ctx.globalAlpha = Math.min(1, G.vehT * 2); otext(G.vehName, W / 2, H * 0.6, 30 * u, '#9fe8ff');
     const c = P.car;
     if (c && !c.sp.boat) {
-      const sp = c.sp, st = [['Speed', (sp.max - 130) / 70], ['Pick-up', sp.acc / 88], ['Turning', (sp.turn - 1.1) / 0.58], ['Grip', sp.grip / 2.1]], cw = 118 * u, x0 = W / 2 - cw * 2 + 6 * u, y = H * 0.6 + 28 * u;
+      const sp = c.sp, up = c.up || NO_UP, st = [['Speed', (sp.max * (up.tune ? 1.12 : 1) - 130) / 70], ['Pick-up', sp.acc * (up.tune ? 1.15 : 1) / 88], ['Turning', (sp.turn - 1.1) / 0.58], ['Grip', sp.grip * (up.tyres ? 1.3 : 1) / 2.1]], cw = 118 * u, x0 = W / 2 - cw * 2 + 6 * u, y = H * 0.6 + 28 * u;
       st.forEach((q, i) => { const n = clamp(Math.round(q[1]), 1, 5), x = x0 + i * cw; otext(q[0], x + 44 * u, y + 5 * u, 15 * u, '#f4efe0', 'right', 3); for (let j = 0; j < 5; j++) { ctx.fillStyle = j < n ? '#ffd21f' : 'rgba(20,20,20,0.6)'; ctx.strokeStyle = '#141414'; ctx.lineWidth = 1.5; circ(x + 54 * u + j * 11 * u, y, 4 * u); ctx.fill(); ctx.stroke(); } });
     }
     ctx.globalAlpha = 1;
@@ -84,11 +88,16 @@ function drawHUD() {
   const Wp = WEAPONS[P.weapon], wl = Wp.name + (Wp.per ? '  x' + P.ammo[P.weapon] : '');
   ctx.font = 19 * u + 'px ' + FONT; { const tw0 = ctx.measureText(wl).width; ctx.fillStyle = 'rgba(16,22,18,0.62)'; rr(W - 18 - tw0 - 46 * u, 114 * u, tw0 + 54 * u, 28 * u, 10); ctx.fill(); }
   otext(wl, W - 18, 134 * u, 19 * u, P.car ? 'rgba(244,239,224,0.55)' : '#f4efe0', 'right', 3.5); { const tw = ctx.measureText(wl).width; ctx.save(); ctx.translate(W - 18 - tw - 24 * u, 128 * u); ctx.scale(1.5 * u, 1.5 * u); drawWeaponIcon(P.weapon); ctx.restore(); }
-  if (P.car && P.car.sp.nitro) {
+  const nit = !!P.car && hasNitro(P.car);
+  if (nit) {
     const c = P.car, bw = 130 * u, bx = W - 18 - bw, by = 146 * u; ctx.fillStyle = 'rgba(20,20,20,0.7)'; rr(bx - 3, by - 3, bw + 6, 16 * u + 6, 6); ctx.fill();
     ctx.fillStyle = c.nlock ? (Math.sin(t * 12) > 0 ? '#777' : '#555') : c.boost ? '#5ad1ff' : '#ff4fa3'; rr(bx, by, Math.max(4, bw * c.nitro), 16 * u, 4); ctx.fill(); otext(c.nlock ? 'RECHARGING' : 'NITRO  (SHIFT)', bx + bw / 2, by + 13 * u, 13 * u, '#fff', 'center', 3);
   }
-  if (G.muted) otext('Sound off (N)', W - 18, (P.car && P.car.sp.nitro ? 190 : 160) * u, 16, '#ddd', 'right', 3);
+  let sy = (nit ? 190 : 162) * u;
+  if (P.tipsy >= 0.5) { otext(TIPSY[clamp(Math.round(P.tipsy), 1, 4)] + '!', W - 18, sy, 20 * u, '#ffcf6b', 'right', 3.5); sy += 24 * u; }
+  if (helis.length && G.stars >= 3) { otext(G.hidden ? 'Hidden fae the helicopter' : 'The helicopter can see you', W - 18, sy, 17 * u, G.hidden ? '#9fe08a' : '#ff9a8a', 'right', 3); sy += 22 * u; }
+  if (G.muted) otext('Sound off (N)', W - 18, sy, 16, '#ddd', 'right', 3);
+  drawPrompt(u);
   // mission arrow
   const tg = targetPos(); if (tg && G.state === 'play' && !P.box) drawArrowTo(tg.x, tg.y, '#ff4fa3');
   // big banner

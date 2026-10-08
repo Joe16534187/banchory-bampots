@@ -6,8 +6,9 @@ const cam = { x: SPOTS.start.x, y: SPOTS.start.y - 200, z: 1, x0: 0, y0: 0, x1: 
 const player = { x: SPOTS.start.x, y: SPOTS.start.y, a: Math.PI / 2, vx: 0, vy: 0, car: null, hp: 5, knock: 0, z: 0, vz: 0, rot: 0, rv: 0, carrying: null, box: false, shove: 0, shoveCd: 0,
   safe: { x: SPOTS.start.x, y: SPOTS.start.y }, safeT: 0, walk: 0, inv: 0, bub: null, isPlayer: true, moving: false, pax: 0,
   skin: '#f1c9a5', shirt: '#ffd21f', hair: '#3a2a1c', legs: '#2d3a55', hat: 0, kind: 'player', state: 'walk',
-  weapon: 'fist', has: { fist: true }, ammo: { tattie: 0, haggis: 0, rocket: 0 }, freeze: 0 };
-const cars = [], peds = [], parts = [], floaters = [], pickups = [], shots = [], salmon = [];
+  weapon: 'fist', has: { fist: true }, ammo: { tattie: 0, haggis: 0, rocket: 0 }, freeze: 0, armour: 0, tipsy: 0, inside: false };
+const cars = [], peds = [], parts = [], floaters = [], pickups = [], shots = [], salmon = [], copShots = [], helis = [];
+const NO_UP = {};                               // a motor with nothing bought for it at Dod's
 const SKID_MAX = 500, skids = new Float32Array(SKID_MAX * 5); let skidN = 0, skidI = 0;
 
 function bigText(text, sub, col, dur) { G.big = { text, sub: sub || '', col: col || '#ffd21f', t: dur || 3.4, t0: dur || 3.4 }; }
@@ -43,7 +44,10 @@ const SPECS = {      // max: top speed, acc: pick-up, turn: steering sharpness, 
   tractor: { name: 'Tractor', len: 44, w: 27, max: 160, acc: 230, turn: 2.9, grip: 10, mass: 3, brake: 2.5, offroad: true, cols: ['#2f8a3c', '#c73a2b', '#2b62a8'] },
   buggy: { name: 'Golf Buggy', len: 30, w: 18, max: 195, acc: 270, turn: 4.0, grip: 5, mass: 0.5, brake: 2.0, offroad: true, cols: ['#f4f1e8'] },
   pzazz: { name: 'The Pzazz', len: 46, w: 22, max: 470, acc: 420, turn: 3.2, grip: 9.5, mass: 1.1, brake: 2.8, nitro: true, cols: ['#e21d8e'] },
-  police: { name: 'Polis Car', len: 46, w: 22, max: 405, acc: 350, turn: 3.1, grip: 9, mass: 1.3, brake: 2.4, cols: ['#f4f4f0'] },
+  police: { name: 'Polis Car', len: 46, w: 22, max: 405, acc: 350, turn: 3.1, grip: 9, mass: 1.3, brake: 2.4, cop: true, cols: ['#f4f4f0'] },
+  polvan: { name: 'Polis Riot Van', len: 56, w: 25, max: 375, acc: 330, turn: 2.6, grip: 9, mass: 2.9, brake: 2.2, cop: true, cols: ['#f4f4f0'] },
+  jeep: { name: 'Army Jeep', len: 44, w: 23, max: 430, acc: 400, turn: 3.2, grip: 9.5, mass: 1.6, brake: 2.6, offroad: true, cop: true, cols: ['#55623f'] },
+  tank: { name: 'Army Tank', len: 62, w: 36, max: 205, acc: 200, turn: 1.9, grip: 12, mass: 9, brake: 3, offroad: true, cop: true, tank: true, cols: ['#5b6843'] },
   dinghy: { name: 'Rubber Dinghy', len: 34, w: 20, max: 130, acc: 135, turn: 2.2, grip: 1, mass: 0.4, boat: true, cols: ['#f0791a'] }
 };
 for (const k in SPECS) { const sp = SPECS[k]; sp.r = sp.w / 2 + 1; const n = Math.max(2, Math.round(sp.len / sp.w)), m = sp.len / 2 - sp.r; sp.offs = []; for (let i = 0; i < n; i++) sp.offs.push(-m + 2 * m * i / (n - 1)); if (!sp.cols) sp.cols = CARCOLS; }
@@ -51,12 +55,13 @@ let CAR_ID = 1;
 function makeCar(type, x, y, a, o) {
   const sp = SPECS[type];
   const c = { id: CAR_ID++, type, sp, x, y, a, vx: 0, vy: 0, vf: 0, spin: 0, steer: 0, col: pick(sp.cols), driver: null, ai: null, dmg: 0, dead: false, brake: false, sink: 0, keep: false, tag: '',
-    horn: 0, siren: false, slip: 0, surf: 'road', gone: false, smokeT: 0, hitCd: 0, nitro: 1, boost: false, nlock: false };
+    horn: 0, siren: false, slip: 0, surf: 'road', gone: false, smokeT: 0, hitCd: 0, nitro: 1, boost: false, nlock: false, up: null, turret: a, fireT: 0 };
   if (type === 'banger') c.dmg = rnd(30, 48);
   if (o) Object.assign(c, o);
   cars.push(c); return c;
 }
 function carSpeed(c) { return hyp(c.vx, c.vy); }
+function hasNitro(c) { return !!(c.sp.nitro || c.up && c.up.nitro); }
 function killCar(c) {
   c.dead = true; c.siren = false;
   puff(c.x + Math.cos(c.a) * c.sp.len * 0.3, c.y + Math.sin(c.a) * c.sp.len * 0.3, 14, '#3a3a3a', 70, 10, 1.4);
@@ -67,7 +72,7 @@ function killCar(c) {
 function carImpact(c, imp, x, y) {
   if (imp < 60 || c.hitCd > 0) return;
   c.hitCd = 0.12;
-  if (!c.dead) { c.dmg += (imp - 60) * 0.05 * (c.type === 'buggy' ? 1.3 : 1); if (c.dmg >= 100) killCar(c); }
+  if (!c.dead) { c.dmg += (imp - 60) * 0.05 * (c.type === 'buggy' ? 1.3 : 1) * (c.sp.tank ? 0 : c.up && c.up.bars ? 0.5 : 1); if (c.dmg >= 100) killCar(c); }
   if (onScreen(x, y, 80)) { sparks(x, y, Math.min(9, imp / 35)); AudioFX.crash(clamp(imp / 380, 0.15, 1) * vol(x, y)); }
   if (c === player.car) { G.shake = Math.min(16, G.shake + imp * 0.035); missionEvent('crash', imp); }
 }
@@ -105,8 +110,9 @@ function updateCar(c, dt, thr, steer, hb) {
   const surf = surfaceAt(c.x, c.y); c.surf = surf;
   if (surf === 'water') { startSink(c); return; }
   const sand = surf === 'sand', off = surf === 'grass' || sand, boost = c.boost && thr > 0 && !sand && !c.dead;
-  const maxV = sp.max * (sand ? 0.3 : off ? (sp.offroad ? 0.86 : 0.6) : 1) * (1 - 0.3 * clamp((c.dmg - 60) / 40, 0, 1)) * (boost ? 1.45 : 1);
-  const grip = (hb ? 1.5 : sp.grip) * (sand ? 0.45 : off ? 0.62 : 1);
+  const up = c.up || NO_UP, acc = sp.acc * (up.tune ? 1.15 : 1);                       // Dod's upgrades
+  const maxV = sp.max * (up.tune ? 1.12 : 1) * (sand ? 0.3 : off ? (sp.offroad ? 0.86 : 0.6) : 1) * (1 - 0.3 * clamp((c.dmg - 60) / 40, 0, 1)) * (boost ? 1.45 : 1);
+  const grip = (hb ? 1.5 : sp.grip * (up.tyres ? 1.3 : 1)) * (sand ? 0.45 : off ? 0.62 : 1);
   c.steer += clamp(steer - c.steer, -dt * 7, dt * 7);
   let fx = Math.cos(c.a), fy = Math.sin(c.a), vf = c.vx * fx + c.vy * fy;
   const sf = clamp(vf / 100, -1, 1) * (1 - 0.42 * clamp(Math.abs(vf) / sp.max, 0, 1));
@@ -114,8 +120,8 @@ function updateCar(c, dt, thr, steer, hb) {
   c.spin *= Math.exp(-5 * dt);
   fx = Math.cos(c.a); fy = Math.sin(c.a); vf = c.vx * fx + c.vy * fy; let vl = -c.vx * fy + c.vy * fx;
   c.brake = false;
-  if (thr > 0) { if (vf < -5) { vf += sp.acc * 2.2 * dt; c.brake = true; } else vf += sp.acc * (sand ? 0.5 : off ? 0.75 : 1) * (boost ? 2.3 : 1) * thr * Math.max(0, 1 - vf / maxV) * dt; }
-  else if (thr < 0) { if (vf > 8) { vf += 290 * sp.brake * dt * thr; c.brake = true; } else vf += sp.acc * 0.7 * thr * Math.max(0, 1 + vf / (maxV * 0.38)) * dt; }
+  if (thr > 0) { if (vf < -5) { vf += acc * 2.2 * dt; c.brake = true; } else vf += acc * (sand ? 0.5 : off ? 0.75 : 1) * (boost ? 2.3 : 1) * thr * Math.max(0, 1 - vf / maxV) * dt; }
+  else if (thr < 0) { if (vf > 8) { vf += 290 * sp.brake * dt * thr; c.brake = true; } else vf += acc * 0.7 * thr * Math.max(0, 1 + vf / (maxV * 0.38)) * dt; }
   if (hb) { vf -= Math.sign(vf) * Math.min(Math.abs(vf), 240 * dt); c.brake = true; }
   const drag = (c.driver ? 0.05 : 1.8) + (sand ? 3 : off ? 0.8 : 0) + (thr === 0 ? 0.5 : 0) + (c.dead ? 1.5 : 0);
   vf *= Math.exp(-drag * dt);

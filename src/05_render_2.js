@@ -65,7 +65,10 @@ function drawDecals() {
     for (const g of [0, 1, 2]) { ctx.strokeStyle = g === 2 ? 'rgba(170,140,70,0.6)' : g ? 'rgba(90,60,30,0.4)' : 'rgba(20,20,22,0.38)'; ctx.lineWidth = 4; ctx.beginPath(); for (let i = 0; i < skidN; i++) { const k = i * 5; if (skids[k + 4] !== g) continue; ctx.moveTo(skids[k], skids[k + 1]); ctx.lineTo(skids[k + 2], skids[k + 3]); } ctx.stroke(); }
   }
   // respray forecourt
-  const rs = SPOTS.respray; if (onScreen(rs.x, rs.y, 100)) { ctx.strokeStyle = G.heat >= 1 ? '#7dff8a' : 'rgba(255,255,255,0.5)'; ctx.lineWidth = 4; ctx.setLineDash([12, 10]); ctx.lineDashOffset = -t * 30; circ(rs.x, rs.y, 40); ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0; }
+  const rs = SPOTS.respray; if (onScreen(rs.x, rs.y, 100)) { ctx.strokeStyle = G.heat >= 1 || G.nearShop === DODS ? '#7dff8a' : 'rgba(255,255,255,0.5)'; ctx.lineWidth = 4; ctx.setLineDash([12, 10]); ctx.lineDashOffset = -t * 30; circ(rs.x, rs.y, 40); ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0; }
+  // doorsteps: where to stand for a pint, or a word with Big Eck
+  for (const s of SHOPS) { if (s.kind === 'garage' || !onScreen(s.at.x, s.at.y, 40)) continue; const k = (t * 0.9 + s.at.x * 0.01) % 1; ctx.strokeStyle = s.col; ctx.globalAlpha = 0.75 * (1 - k); ctx.lineWidth = 3; circ(s.at.x, s.at.y, 9 + k * 16); ctx.stroke(); ctx.globalAlpha = 0.5; ctx.lineWidth = 2; circ(s.at.x, s.at.y, 9); ctx.stroke(); ctx.globalAlpha = 1; }
+  drawFlowerBed(SPOTS.spadeBed.x, SPOTS.spadeBed.y);                 // the janitor's pride and joy, beside the Primary
   // mission target ring
   const tg = targetPos();
   if (tg && onScreen(tg.x, tg.y, 120)) {
@@ -99,6 +102,9 @@ function drawProp(p) {
     case 'phone': ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(-7, -6, 19, 19); ctx.fillStyle = '#b01f17'; ctx.fillRect(-10, -10, 20, 20); ctx.fillStyle = '#d93127'; ctx.fillRect(-8, -8, 16, 16); ctx.fillStyle = '#f04a3e'; ctx.fillRect(-5, -5, 10, 10); ctx.fillStyle = '#ffd98a'; circ(0, 0, 2); ctx.fill(); break;
     case 'totem': ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(-2, -1, 10, 26); for (let i = 0; i < 4; i++) { ctx.fillStyle = ['#c8322b', '#e8c74a', '#2f66b3', '#1f7a4d'][i]; ctx.fillRect(-5, -14 + i * 7, 10, 7); } ctx.fillStyle = '#7a5230'; ctx.fillRect(-11, -11, 22, 3); break;
     case 'memorial': ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(-9, -7, 22, 22); ctx.fillStyle = '#8f8a80'; ctx.fillRect(-11, -11, 22, 22); ctx.fillStyle = '#b3aea3'; ctx.fillRect(-7, -7, 14, 14); ctx.fillStyle = '#9a948c'; ctx.fillRect(-1.5, -5, 3, 10); ctx.fillRect(-4, -2.5, 8, 3); break;
+    case 'stall': ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(-15, -8, 34, 22); ctx.fillStyle = '#6b4a2b'; ctx.fillRect(-17, -10, 34, 20); ctx.fillStyle = '#8a6a48'; ctx.fillRect(-15, -8, 30, 16);
+      for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? '#e8e4d0' : '#3d6b4a'; ctx.fillRect(-17 + i * 5.67, -13, 5.67, 7); }
+      ctx.save(); ctx.translate(-7, 3); ctx.scale(0.62, 0.62); drawWeaponIcon('haddock'); ctx.restore(); ctx.save(); ctx.translate(7, 3); ctx.scale(0.6, 0.6); drawWeaponIcon('haggis'); ctx.restore(); break;
     case 'post': ctx.fillStyle = 'rgba(0,0,0,0.25)'; circ(2, 3, 7); ctx.fill(); ctx.fillStyle = '#c8281e'; circ(0, 0, 7); ctx.fill(); ctx.fillStyle = '#8f1a13'; circ(0, 0, 4.5); ctx.fill(); break;
   }
   ctx.restore();

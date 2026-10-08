@@ -11,7 +11,7 @@ function collideCars(list) {
       if (pen > best && d > 0.001) { best = pen; nx = dx / d; ny = dy / d; oa = o1; ob = o2; px = (ax + bx) / 2; py = (ay + by) / 2; }
     }
     if (best <= 0) continue;
-    const ma = a.sp.mass, mb = b.sp.mass, tot = ma + mb;
+    const ma = a.sp.mass * (a.up && a.up.bars ? 1.5 : 1), mb = b.sp.mass * (b.up && b.up.bars ? 1.5 : 1), tot = ma + mb;
     a.x += nx * best * mb / tot; a.y += ny * best * mb / tot; b.x -= nx * best * ma / tot; b.y -= ny * best * ma / tot;
     const rvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
     if (rvn < 0) {
@@ -22,7 +22,8 @@ function collideCars(list) {
       if (imp > 60) {
         const pc = a === player.car ? a : b === player.car ? b : null, other = pc === a ? b : a;
         if (pc && pc.hitCd <= 0) {
-          if (other.type === 'police') addHeat(0.8); else if (other.driver === 'ai') addHeat(0.22); else addHeat(0.04);
+          if (other.sp.cop && other.ai) { if (Math.abs(pc.vf) > Math.abs(other.vf) + 30) addHeat(G.stars < 2 ? 0.8 : 0.4); }     // only when you are the one doing the ramming: when they hit you, it is not held against you
+          else if (other.driver === 'ai') addHeat(0.22); else addHeat(0.04);
           if (other.ai) { other.ai.stun = rnd(0.5, 1.2); other.horn = 0.8; if (Math.random() < 0.5) floater(other.x, other.y - 24, pick(['HONK!', 'BEEP!', 'Oi!', 'Ya bampot!']), '#fff'); }
         }
         carImpact(a, imp * 2 * mb / tot, px, py); carImpact(b, imp * 2 * ma / tot, px, py);
@@ -84,11 +85,13 @@ function aiControl(c, dt) {
   return _ctl;
 }
 function chaseControl(c, dt) {
-  const ai = c.ai, P = player.car || player, dx = P.x - c.x, dy = P.y - c.y, dist = hyp(dx, dy);
+  const ai = c.ai, st = G.stars, inCar = !!player.car, P = player.car || player, dx = P.x - c.x, dy = P.y - c.y, dist = hyp(dx, dy);
   let tx, ty;
   const pn = G.playerNode || nearestNode(P.x, P.y);
-  if (dist < 460 || ai.node === pn && hyp(pn.x - c.x, pn.y - c.y) < 90) { tx = P.x + (P.vx || 0) * 0.3; ty = P.y + (P.vy || 0) * 0.3; ai.node = null; }
-  else {
+  if (dist < 460 || ai.node === pn && hyp(pn.x - c.x, pn.y - c.y) < 90) {
+    const lead = st >= 2 ? clamp(dist / 480, 0.25, 0.85) : 0.3;                 // from two stars up they aim ahead of you, to cut you off and ram
+    tx = P.x + (P.vx || 0) * lead; ty = P.y + (P.vy || 0) * lead; ai.node = null;
+  } else {
     if (!ai.node) { let bn = null, bd = 1e9; for (const n of NODE_LIST) { const d0 = hyp(n.x - c.x, n.y - c.y); if (d0 > 700) continue; const d = d0 + DIST[n.idx][pn.idx]; if (d < bd) { bd = d; bn = n; } } ai.node = bn || nearestNode(c.x, c.y); }
     if (hyp(ai.node.x - c.x, ai.node.y - c.y) < 80 && ai.node !== pn) ai.node = NEXT[ai.node.idx][pn.idx] || pn;
     tx = ai.node.x; ty = ai.node.y;
@@ -97,8 +100,11 @@ function chaseControl(c, dt) {
   _ctl.steer = clamp(d * 2.6, -1, 1); _ctl.thr = 1;
   if (Math.abs(d) > 0.9 && c.vf > 160) _ctl.thr = -0.6;
   if (Math.abs(d) > 1.5 && c.vf > 120) _ctl.hb = true;
-  const halt = !player.car && dist < 95;
-  if (halt) { _ctl.thr = c.vf > 25 ? -1 : 0; _ctl.hb = c.vf < 40; }
+  // one star: they only tail you. Two: they ram. Three and up: they will run you down on foot as well. Tanks hold off and shell you.
+  const tail = st <= 1 && inCar && dist < 125, ps = inCar ? Math.abs(player.car.vf) : 0;
+  const halt = inCar ? tail && ps < 40 : (c.sp.tank ? dist < 240 : st <= 2 && dist < 95);
+  if (halt) { _ctl.thr = c.vf > 25 ? -1 : 0; _ctl.hb = c.vf < 40; ai.stuck = 0; }
+  else if (tail) { if (c.vf > ps + 50) _ctl.thr = -1; else if (c.vf > ps - 10) _ctl.thr = 0.2; ai.stuck = 0; }
   else if (Math.abs(c.vf) < 16) { ai.stuck += dt; if (ai.stuck > 1.0) { ai.rev = 0.8; ai.revSteer = d > 0 ? -1 : 1; ai.stuck = 0; ai.node = null; } } else ai.stuck = 0;
   return _ctl;
 }
@@ -117,27 +123,39 @@ function spawnTraffic() {
     const c = makeCar(wpick(TRAFFIC_MIX), x, y, Math.atan2(uy, ux)); aiStart(c, e, dir); c.vx = ux * e.speed * 0.6; c.vy = uy * e.speed * 0.6; return;
   }
 }
+// ---------- the polis, and what they send as the stars go up ----------
+// 1 star: a patrol car that follows.  2: riot vans that ram, and fire baton rounds.  3: the helicopter.  4: the army.
+const COP_WANT = [0, 1, 2, 3, 6];
+function copCount(type) { let n = 0; for (const c of cars) if (c.type === type && c.ai && c.ai.mode === 'chase') n++; return n; }
 function spawnPolice() {
-  const P = player.car || player, pn = G.playerNode || nearestNode(P.x, P.y); let best = null, bs = 1e9;
-  for (const n of NODE_LIST) { if (n.exit || onScreen(n.x, n.y, 160)) continue; const d = DIST[n.idx][pn.idx]; if (d < 500) continue; const s = Math.abs(d - 1100) + rnd(300); if (s < bs) { bs = s; best = n; } }
+  const st = G.stars; let type = 'police';
+  if (st >= 4) type = copCount('tank') < 2 ? 'tank' : copCount('jeep') < 2 ? 'jeep' : 'polvan';
+  else if (st === 3) type = copCount('polvan') < 2 ? 'polvan' : 'police';
+  else if (st === 2) type = copCount('polvan') < 1 ? 'polvan' : 'police';
+  const P = player.car || player, pn = G.playerNode || nearestNode(P.x, P.y), want = type === 'tank' ? 800 : 1100; let best = null, bs = 1e9;
+  for (const n of NODE_LIST) { if (n.exit || onScreen(n.x, n.y, 160)) continue; const d = DIST[n.idx][pn.idx]; if (d < 500) continue; const s = Math.abs(d - want) + rnd(300); if (s < bs) { bs = s; best = n; } }
   if (!best) return;
-  const nx = NEXT[best.idx][pn.idx] || pn, c = makeCar('police', best.x, best.y, Math.atan2(nx.y - best.y, nx.x - best.x));
-  aiStart(c, best.edges[0], 1); c.ai.mode = 'chase'; c.ai.node = nx; c.siren = true;
+  const nx = NEXT[best.idx][pn.idx] || pn, c = makeCar(type, best.x, best.y, Math.atan2(nx.y - best.y, nx.x - best.x));
+  aiStart(c, best.edges[0], 1); c.ai.mode = 'chase'; c.ai.node = nx; c.siren = type === 'police' || type === 'polvan';
+  if (type === 'tank' && !G.armyMsg) { G.armyMsg = true; pagerMsg("They've sent for the army. The actual army. Watch for the red rings: that's where the shells land."); }
 }
 function updatePolice(dt) {
-  const P = player.car || player;
-  G.stars = Math.floor(G.heat);
+  const P = player.car || player, st = G.stars = Math.floor(G.heat);
   let chasers = 0, near = false, close = false;
   for (const c of cars) {
-    if (c.type !== 'police' || !c.ai) continue;
+    if (!c.sp.cop || !c.ai) continue;
     const d = hyp(c.x - P.x, c.y - P.y);
-    if (G.stars > 0) {
-      if (c.ai.mode !== 'chase' && d < 800) { c.ai.mode = 'chase'; c.ai.node = null; c.siren = true; }
-      if (c.ai.mode === 'chase') { chasers++; if (d < 520) near = true; if (d < 130) close = true; }
-    } else if (c.ai.mode === 'chase') { const r = aiNearestEdge(c); c.ai.mode = 'traffic'; c.ai.e = r[0]; c.ai.dir = r[1]; c.siren = false; }
+    if (st > 0) {
+      if (c.ai.mode !== 'chase' && d < 800) { c.ai.mode = 'chase'; c.ai.node = null; c.siren = c.type === 'police' || c.type === 'polvan'; }
+      if (c.ai.mode === 'chase') { chasers++; if (d < 520) near = true; if (d < 130) close = true; copFire(c, dt, d, st); }
+    } else {
+      if (c.ai.mode === 'chase') { const r = aiNearestEdge(c); c.ai.mode = 'traffic'; c.ai.e = r[0]; c.ai.dir = r[1]; c.siren = false; }
+      if (c.type !== 'police' && !onScreen(c.x, c.y, 160)) c.gone = true;                // the heavy mob away home
+    }
   }
-  if (G.stars > 0) {
-    G.polT -= dt; if (chasers < G.stars && G.polT <= 0) { spawnPolice(); G.polT = 2.5; }
+  updateHelis(dt, st); if (G.heliNear) near = true;
+  if (st > 0) {
+    G.polT -= dt; if (chasers < COP_WANT[st] && G.polT <= 0) { spawnPolice(); G.polT = st >= 4 ? 1.8 : 2.5; }
     if (near) G.unseenT = 0; else G.unseenT += dt;
     if (G.unseenT > 5) { G.heat -= dt * 0.16; if (G.heat < 1) { G.heat = 0; hint("You've shaken the polis", 3); } }
     const still = player.car ? Math.abs(player.car.vf) < 30 && !player.car.sp.boat : (hyp(player.vx, player.vy) < 24 || player.knock > 0);
@@ -146,4 +164,3 @@ function updatePolice(dt) {
     if (G.nickT > G.nickLim) nicked();
   } else { G.nickT = 0; if (G.heat > 0) G.heat = Math.max(0, G.heat - dt * 0.03); }
 }
-

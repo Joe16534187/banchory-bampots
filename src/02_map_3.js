@@ -1,6 +1,7 @@
 'use strict';
 const BUGGY_SPOT = M(1470, 2050);
 for (const k in SPOTS) CLEAR.push({ x: SPOTS[k].x, y: SPOTS[k].y, r: 70 });
+CLEAR.push({ x: BELL_BED.x, y: BELL_BED.y, r: 70 });
 CLEAR.push({ x: LM.tower.x + 26, y: LM.tower.y + 26, r: 190 });
 for (const b of BUNKERS) CLEAR.push({ x: b.x, y: b.y, r: Math.max(b.rx, b.ry) + 16 });
 for (const g of GOLFF.greens) CLEAR.push({ x: g.x, y: g.y, r: 76 });
@@ -12,7 +13,7 @@ for (const p of ROWIES.concat(PIES, WEAPON_SPOTS)) CLEAR.push({ x: p.x, y: p.y, 
 for (const p of [[3170, 2380], [1470, 2050], [1510, 2050], [2200, 2200], [960, 1050], [4640, 800]]) CLEAR.push({ x: p[0] * S, y: p[1] * S, r: 110 });
 // the Pzazz turns up somewhere different every time
 const PZAZZ_SPOTS = [[4850, 760], [540, 3455], [1590, 3010], [3545, 2660], [4210, 2962], [4440, 3330], [5080, 2300], [4770, 1130], [3610, 745], [3318, 960], [2300, 300], [1340, 1060], [1345, 1200],
-  [300, 1000], [400, 2250], [980, 2300], [2480, 2415], [3120, 2170], [2160, 1700], [4135, 1350], [3865, 1712], [2500, 2950], [5000, 900], [150, 150], [3080, 3300], [5125, 3075]].map(p => M(p[0], p[1]));
+  [300, 1000], [400, 2250], [980, 2300], [2480, 2415], [3120, 2170], [2160, 1700], [4135, 1350], [3865, 1712], [2500, 2950], [5000, 900], [150, 150], [3080, 3300], [5125, 3075], [1290, 152]].map(p => M(p[0], p[1]));
 for (const p of PZAZZ_SPOTS) CLEAR.push({ x: p.x, y: p.y, r: 80 });
 const JETTY = M(68, 2420), DINGHY_SPOT = M(87, 2414); CLEAR.push({ x: JETTY.x, y: JETTY.y - 60, r: 150 });
 // the Falls of Feugh, just upstream (south) of the bridge
