@@ -1,7 +1,7 @@
 'use strict';
-function explode(x, y, R, pow, dmg, kind) {
+function explode(x, y, R, pow, dmg, kind, cops) {          // cops: one of theirs, so it is not held against you
   const v = vol(x, y), P = player;
-  G.shake = Math.min(20, G.shake + 16 * v); AudioFX.boom(v); addHeat(0.9);
+  G.shake = Math.min(20, G.shake + 16 * v); AudioFX.boom(v); if (!cops) addHeat(0.9);
   for (let i = 0; i < 22; i++) { const a = rnd(TAU), s = rnd(60, 380); part(x, y, Math.cos(a) * s, Math.sin(a) * s, rnd(0.25, 0.6), rnd(4, 9), pick(kind === 'haggis' ? ['#8a5a3a', '#c98f3c', '#ffe680', '#6b4a2b'] : ['#ffe680', '#ff9a2a', '#fff', '#ff5a2a']), 'dot', -4); }
   puff(x, y, 12, 'rgba(60,60,60,0.9)', 110, 14, 1.3, 26); part(x, y, 0, 0, 0.5, 14, '#fff3c0', 'ring', R);
   floater(x, y - 20, kind === 'haggis' ? 'SPLAT!' : 'BOOM!', '#ffe680');
@@ -9,8 +9,9 @@ function explode(x, y, R, pow, dmg, kind) {
   for (const c of cars) {
     const dx = c.x - x, dy = c.y - y, d = hyp(dx, dy) || 1, RR = R + c.sp.len / 2; if (d > RR || c.sink) continue;
     const f = 1 - d / RR; c.vx += dx / d * pow * f / c.sp.mass; c.vy += dy / d * pow * f / c.sp.mass; c.spin += rnd(-4, 4) * f;
-    if (!c.dead) { c.dmg += dmg * f + 8; if (c.dmg >= 100) killCar(c); } if (c.ai) c.ai.stun = Math.max(c.ai.stun, 1.2); if (c.type === 'police' && c !== P.car) addHeat(0.6);
+    if (!c.dead) { c.dmg += (dmg * f + 8) * (c.sp.tank ? 0.45 : 1); if (c.dmg >= 100) killCar(c); } if (c.ai) c.ai.stun = Math.max(c.ai.stun, c.sp.tank ? 0.5 : 1.2); if (c.sp.cop && c.ai && c !== P.car && !cops) addHeat(0.6);
   }
+  if (!cops) for (const h of helis) if (!h.leave && hyp(h.x - x, h.y - y) < R * 0.75 + 30) hitHeli(h, 3);
   queryGrid(PGRID, x, y, R, _pp);
   for (const p of _pp) { const dx = p.x - x, dy = p.y - y, d = hyp(dx, dy) || 1; if (p.knocked || d > R) continue; p.knocked = true; p.vx = dx / d * pow * 0.8; p.vy = dy / d * pow * 0.8; p.vr = rnd(-12, 12); p.z = 1; p.vz = 200; }
   if (!P.car && hyp(P.x - x, P.y - y) < R * 0.6) { const dx = P.x - x, dy = P.y - y, d = hyp(dx, dy) || 1; knockPlayer(dx / d * pow, dy / d * pow); }
@@ -28,9 +29,10 @@ function updateShots(dt) {
       s.x += s.vx * dt; s.y += s.vy * dt; s.rot += dt * 20; s.life -= dt;
       const h = shotHits(s, 4);
       if (h === 'wall') { puff(s.x, s.y, 3, '#e8dcae', 50, 3, 0.4, 2); dead = true; }
-      else if (h && h.sp) { if (!h.dead) { h.dmg += 5; if (h.dmg >= 100) killCar(h); } h.vx += s.vx * 0.04 / h.sp.mass; h.vy += s.vy * 0.04 / h.sp.mass; sparks(s.x, s.y, 3); AudioFX.clatter(0.5 * vol(s.x, s.y)); carReact(h, 0.12); dead = true; }
+      else if (h && h.sp) { if (!h.dead && !h.sp.tank) { h.dmg += 5; if (h.dmg >= 100) killCar(h); } h.vx += s.vx * 0.04 / h.sp.mass; h.vy += s.vy * 0.04 / h.sp.mass; sparks(s.x, s.y, 3); AudioFX.clatter(0.5 * vol(s.x, s.y)); carReact(h, 0.12); dead = true; }
       else if (h) { knockPed(h, s.vx * 0.36, s.vy * 0.36, !h.animal); dead = true; }
       else { queryGrid(PGRID, s.x, s.y, 14, _pp); for (const p of _pp) if (!p.knocked && hyp(p.x - s.x, p.y - s.y) < p.r + 6) { p.knocked = true; p.vx = s.vx * 0.3; p.vy = s.vy * 0.3; p.vr = rnd(-10, 10); p.z = 1; p.vz = 130; AudioFX.clatter(0.5 * vol(s.x, s.y)); dead = true; break; } }
+      if (!dead) { const hl = heliAt(s.x, s.y, 30); if (hl) { hitHeli(hl, 1); dead = true; } }
       if (s.life <= 0) dead = true;
     } else if (s.type === 'haggis') {
       s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt; s.vz -= 520 * dt; s.rot += dt * 9; s.fuse -= dt;
@@ -40,7 +42,7 @@ function updateShots(dt) {
     } else {
       s.sp = Math.min(640, s.sp + 1000 * dt); s.a += Math.sin(G.t * 26) * 0.035; s.vx = Math.cos(s.a) * s.sp; s.vy = Math.sin(s.a) * s.sp; s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
       part(s.x - s.vx * 0.02, s.y - s.vy * 0.02, rnd(-20, 20), rnd(-20, 20), 0.5, 4, pick(['#ffb347', '#fff', '#ff7a2a']), 'smoke', 8);
-      if (s.life <= 0 || shotHits(s, 6)) { explode(s.x, s.y, 155, 400, 90, 'rocket'); dead = true; }
+      if (s.life <= 0 || shotHits(s, 6) || heliAt(s.x, s.y, 40)) { explode(s.x, s.y, 155, 400, 90, 'rocket'); dead = true; }
     }
     if (dead || s.x < 0 || s.y < 0 || s.x > WW || s.y > WH) shots.splice(i, 1);
   }

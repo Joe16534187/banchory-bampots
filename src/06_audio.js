@@ -1,7 +1,7 @@
 'use strict';
 // ---------- sound (all synthesised, nothing to download) ----------
 const AudioFX = (function () {
-  let ac = null, master = null, nbuf = null, eng = null, eng2 = null, engF = null, engG = null, hornG = null, sirO = null, sirG = null, ringG = null, skidG = null, nitG = null, nitF = null;
+  let ac = null, master = null, nbuf = null, eng = null, eng2 = null, engF = null, engG = null, hornG = null, sirO = null, sirG = null, ringG = null, skidG = null, nitG = null, nitF = null, heliG = null;
   let jingleOn = false, jT = 0, jI = 0, muted = false, ringT = 0;
   // Greensleeves (traditional), the classic ice cream van chime
   const N = { E4: 329.63, G4: 392, Gs4: 415.3, A4: 440, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46 };
@@ -20,6 +20,9 @@ const AudioFX = (function () {
     ringG = ac.createGain(); ringG.gain.value = 0; ringG.connect(master); osc('sine', 400, ringG); osc('sine', 450, ringG);
     const sf = ac.createBiquadFilter(); sf.type = 'bandpass'; sf.frequency.value = 1900; sf.Q.value = 2.5; skidG = ac.createGain(); skidG.gain.value = 0; sf.connect(skidG); skidG.connect(master);
     const ns = ac.createBufferSource(); ns.buffer = nbuf; ns.loop = true; ns.connect(sf); ns.start();
+    // helicopter: low rumble chopped by the blades
+    const hf = ac.createBiquadFilter(); hf.type = 'lowpass'; hf.frequency.value = 260; const hc = ac.createGain(); hc.gain.value = 0.5; heliG = ac.createGain(); heliG.gain.value = 0; ns.connect(hf); hf.connect(hc); hc.connect(heliG); heliG.connect(master);
+    const hl = ac.createOscillator(), hlg = ac.createGain(); hl.type = 'square'; hl.frequency.value = 13; hlg.gain.value = 0.5; hl.connect(hlg); hlg.connect(hc.gain); hl.start();
     nitF = ac.createBiquadFilter(); nitF.type = 'bandpass'; nitF.frequency.value = 600; nitF.Q.value = 1.2; nitG = ac.createGain(); nitG.gain.value = 0; ns.connect(nitF); nitF.connect(nitG); nitG.connect(master);
   }
   function tone(f, dur, type, vol, slide, delay) {
@@ -52,6 +55,7 @@ const AudioFX = (function () {
       ringT = (ringT + dt) % 3; const on = ringT < 0.4 || (ringT > 0.6 && ringT < 1.0); set(ringG.gain, on ? s.ring * 0.07 : 0, 0.01);
       set(skidG.gain, this.skid ? 0.09 : 0, 0.04); this.skid = 0;
       set(nitG.gain, this.nitro ? 0.22 : 0, 0.06); set(nitF.frequency, this.nitro ? 1500 : 500, 0.5); this.nitro = 0;
+      set(heliG.gain, (s.heli || 0) * 0.5, 0.15);
       if (jingleOn) { jT -= dt; if (jT <= 0) { const n = TUNE[jI % TUNE.length]; jI++; jT = n[1] * 0.125; if (n[0]) { tone(N[n[0]] * 2, n[1] * 0.125 + 0.25, 'triangle', 0.1); tone(N[n[0]] * 4, n[1] * 0.1 + 0.1, 'sine', 0.035); } } }
     },
     jingle(on) { jingleOn = on === 'toggle' ? !jingleOn : !!on; if (jingleOn) { jT = 0; jI = 0; } },
@@ -67,6 +71,10 @@ const AudioFX = (function () {
     fizz() { noise(0.9, 0.25, 3000, 1.2, 'highpass', 0, 6000); tone(300, 0.5, 'sawtooth', 0.06, 900); },
     boom(v) { v = v === undefined ? 1 : v; if (v < 0.03) return; noise(0.9, 0.7 * v, 500, 0.6, 'lowpass', 0, 60); tone(70, 0.6, 'sine', 0.6 * v, 28); noise(0.25, 0.3 * v, 2500, 0.8, 'bandpass'); },
     whoosh() { noise(0.5, 0.2, 500, 1.5, 'bandpass', 0, 2600); },
+    thud(v) { v = v === undefined ? 0.6 : v; if (v < 0.03) return; tone(150, 0.13, 'sine', 0.4 * v, 55); noise(0.07, 0.3 * v, 700, 1, 'lowpass'); },
+    till() { noise(0.05, 0.2, 3000, 2, 'bandpass'); tone(1320, 0.1, 'square', 0.07, 0, 0.05); tone(1760, 0.3, 'triangle', 0.16, 0, 0.13); tone(2640, 0.25, 'sine', 0.06, 0, 0.13); },
+    nope() { tone(170, 0.11, 'square', 0.1, 150); tone(140, 0.18, 'square', 0.1, 120, 0.13); },
+    gulp() { for (let i = 0; i < 3; i++) tone(300 - i * 30, 0.1, 'sine', 0.22, 150, i * 0.16); tone(900, 0.2, 'sine', 0.05, 0, 0.55); },
     door() { noise(0.06, 0.3, 500, 1, 'lowpass'); tone(110, 0.07, 'square', 0.1, 70); },
     blip() { tone(880, 0.07, 'square', 0.07); tone(1320, 0.09, 'square', 0.07, 0, 0.08); },
     tick() { tone(1500, 0.02, 'square', 0.02); },

@@ -50,10 +50,4 @@ function updatePickups(dt) {
       floater(p.x, p.y - 12, Wp.name + (Wp.per ? ' +' + Wp.per : ''), '#fff'); if (first) hint(Wp.name + ': SPACE on foot to use it, Q to switch', 3.5);
     } else if (P.hp < 5) { p.gone = true; p.t = 60; P.hp++; AudioFX.pickup(); floater(p.x, p.y - 12, 'Macaroni pie!', '#ffe9a8'); }
   }
-  // Dod's Motors: a quick respray gets the polis off your back
-  const c = P.car;
-  if (c && near(c, SPOTS.respray, 46) && Math.abs(c.vf) < 40 && G.heat >= 1) {
-    if (G.money >= 50) { addMoney(-50, c.x, c.y - 24); G.heat = 0; c.col = pick(CARCOLS.filter(x => x !== c.col)); c.dmg = Math.max(0, c.dmg - 40); puff(c.x, c.y, 16, c.col, 80, 9, 0.9); AudioFX.pickup(); hint('Resprayed. The polis are none the wiser.', 3); }
-    else hint('Dod wants £50 for a respray', 0.5);
-  }
 }

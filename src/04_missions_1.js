@@ -12,15 +12,15 @@ const MISSIONS = [
   {
     id: 'spade', title: 'The Spade', phone: PHONES.spade, reward: 500,
     start(m) {
-      pagerMsg("DODE: Fit like? I, eh, borrowed the greenkeeper's prize spade and the polis are asking questions. It's planted in the flower bed in Bellfield Park. Get rid o it!");
-      setObj('Dig the spade out of the flower bed in Bellfield Park', { x: SPOTS.spadeBed.x, y: SPOTS.spadeBed.y, r: 34 });
+      pagerMsg("DODE: Fit like? I, eh, borrowed the greenkeeper's prize spade and the polis are asking questions. It's planted in the flower bed beside Banchory Primary School. Get rid o it!");
+      setObj('Dig the spade out of the flower bed beside Banchory Primary School', { x: SPOTS.spadeBed.x, y: SPOTS.spadeBed.y, r: 34 });
     },
     update(m, dt) {
       const P = player;
       if (m.step === 0) {
         if (!P.car && near(P, SPOTS.spadeBed, 36)) {
-          m.step = 1; P.carrying = 'spade'; G.heat = Math.max(G.heat, 2.2); G.unseenT = 0; AudioFX.pickup();
-          pagerMsg('A wifie in the park clocked you and phoned the polis. Chuck it off the Bridge of Dee, quick!');
+          m.step = 1; P.carrying = 'spade'; G.heat = Math.max(G.heat, 1.4); G.unseenT = 0; AudioFX.pickup();
+          pagerMsg('The jannie clocked you and phoned the polis. Doon Dee Street to the Bridge of Dee and chuck it in, quick!');
           setObj('Take the spade to the Bridge of Dee. On foot, press SPACE to chuck it in', { x: SPOTS.bridge.x, y: SPOTS.bridge.y, r: 70 });
         } else if (P.car && near(P, SPOTS.spadeBed, 90)) hint('Get oot and dig', 0.5);
       } else if (m.step === 1) { if (P.car && near(P, SPOTS.bridge, 90) && Math.abs(P.car.vf) < 60) hint('Get oot, then press SPACE', 0.5); }
@@ -96,7 +96,7 @@ const MISSIONS = [
       if (b.gone || b.sink > 0) { missionFail('The buggy is in the river'); return; }
       if (b.dead) { missionFail('The buggy conked oot'); return; }
       if (m.step === 0) {
-        if (player.car === b) { m.step = 1; G.heat = Math.max(G.heat, 2.3); G.unseenT = 0; pagerMsg('The captain has phoned the polis! Ower the Bridge of Dee, first right, then up the Scolty track to the tower.'); }
+        if (player.car === b) { m.step = 1; G.heat = Math.max(G.heat, 1.6); G.unseenT = 0; pagerMsg('The captain has phoned the polis! Ower the Bridge of Dee, first right, then up the Scolty track to the tower.'); }
         return;
       }
       if (player.car !== b) { setObj('Get back in the buggy', { follow: b, r: 36 }); return; }

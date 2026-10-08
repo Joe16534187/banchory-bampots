@@ -1,7 +1,8 @@
 'use strict';
 function knockPlayer(vx, vy) {
   const P = player; if (P.inv > 0 || P.knock > 0) return;
-  P.knock = 1.7; P.vx = vx * 0.8 + rnd(-40, 40); P.vy = vy * 0.8 + rnd(-40, 40); P.z = 1; P.vz = 190; P.rv = rnd(-13, 13); P.hp--; P.inv = 3;
+  P.knock = 1.7; P.vx = vx * 0.8 + rnd(-40, 40); P.vy = vy * 0.8 + rnd(-40, 40); P.z = 1; P.vz = 190; P.rv = rnd(-13, 13); P.inv = 3;
+  if (P.armour > 0) { P.armour--; floater(P.x, P.y - 30, P.armour ? 'The tweed took it!' : 'The tweed is done for!', '#c9b06a'); } else P.hp--;
   G.shake = 12; AudioFX.bonk(); say(P, pick(['Oof!', 'Ooyah!', 'Ma heid!']));
 }
 function respawn(at) { const P = player; P.x = at.x; P.y = at.y; P.vx = P.vy = 0; P.knock = 0; P.z = 0; P.rot = 0; P.inv = 2.5; P.safe.x = at.x; P.safe.y = at.y; cam.x = at.x; cam.y = at.y; }
@@ -16,19 +17,26 @@ function drookit() {
 function knackered() {
   const P = player; if (P.car) { P.car.driver = null; P.car = null; }
   missionEvent('knackered'); bigText('KNACKERED!', 'Patched up at the health centre  -£100', '#ff8f6b'); addMoney(-100);
-  P.hp = 5; G.heat = 0; respawn(SPOTS.healthDoor); AudioFX.fail();
+  P.hp = 5; P.tipsy = 0; G.heat = 0; copShots.length = 0; respawn(SPOTS.healthDoor); AudioFX.fail();
 }
 function nicked() {
   const P = player; if (P.car) { P.car.driver = null; P.car = null; }
   const armed = Object.keys(P.has).length > 1; P.has = { fist: true }; P.ammo = { tattie: 0, haggis: 0, rocket: 0 }; P.weapon = 'fist';
   missionEvent('nicked'); bigText('NICKED!', (armed ? 'Weapons confiscated' : 'A stern word from the polis') + '  -£150', '#8fb8ff'); addMoney(-150);
-  G.heat = 0; G.nickT = 0; respawn(SPOTS.polisDoor); AudioFX.jingle(false); AudioFX.fail();
-  for (const c of cars) if (c.type === 'police' && c.ai && c.ai.mode === 'chase' && !onScreen(c.x, c.y)) c.gone = true;
+  G.heat = 0; G.nickT = 0; P.tipsy = 0; copShots.length = 0; respawn(SPOTS.polisDoor); AudioFX.jingle(false); AudioFX.fail();
+  for (const c of cars) if (c.sp.cop && c.ai && c.ai.mode === 'chase' && !onScreen(c.x, c.y)) c.gone = true;
 }
 function updatePlayer(dt, inp) {
   const P = player;
   if (P.bub) { P.bub.t -= dt; if (P.bub.t <= 0) P.bub = null; }
   if (P.inv > 0) P.inv -= dt; if (P.shove > 0) P.shove -= dt; if (P.shoveCd > 0) P.shoveCd -= dt;
+  // a few pints in: it wears off in about half a minute a pint, and meantime nothing goes quite where you point it
+  const tw = Math.min(P.tipsy, 4);
+  if (P.tipsy > 0) {
+    P.tipsy = Math.max(0, P.tipsy - dt / 28); P.hicT = (P.hicT || 6) - dt;
+    if (P.hicT <= 0) { P.hicT = rnd(5, 11) / Math.max(1, tw); if (tw >= 1.5 && !P.car) say(P, pick(['Hic!', 'Hic!', 'Jusht the one.', 'Am fine.', 'Hic! Pardon.']), 1.2); }
+    if (P.car && !P.car.sp.boat && tw >= 2 && G.heat < 1 && G.state === 'play') for (const o of cars) if (o.type === 'police' && o.ai && hyp(o.x - P.x, o.y - P.y) < 230) { G.heat = 1.05; G.unseenT = 0; hint('The polis smell the heavy on you. Drink driving!', 3.5); break; }
+  }
   if (P.knock > 0) {
     P.knock -= dt; P.x += P.vx * dt; P.y += P.vy * dt; const f = Math.exp(-(P.z > 0 ? 1.5 : 6) * dt); P.vx *= f; P.vy *= f;
     if (P.z > 0) { P.z += P.vz * dt; P.vz -= 560 * dt; P.rot += P.rv * dt; if (P.z <= 0) { P.z = 0; puff(P.x, P.y, 4, 'rgba(220,210,190,0.8)', 30, 4, 0.5); } }
@@ -40,20 +48,25 @@ function updatePlayer(dt, inp) {
   if (inp.nextHit) cycleWeapon(); if (inp.numHit) { const w = WORDER[inp.numHit - 1]; if (w && P.has[w]) P.weapon = w; }
   if (P.car) {
     const c = P.car;
-    if (c.sp.nitro) {
+    if (c.fireT > 0 && c.driver === 'player') c.fireT -= dt;
+    if (hasNitro(c)) {
       if (c.nitro <= 0.02) c.nlock = true; else if (c.nitro > 0.3) c.nlock = false;
       c.boost = inp.nitro && inp.up && !c.nlock && !c.dead;
       c.nitro = c.boost ? Math.max(0, c.nitro - dt * 0.36) : Math.min(1, c.nitro + dt * 0.09);
     }
-    updateCar(c, dt, (inp.up ? 1 : 0) - (inp.down ? 1 : 0), (inp.right ? 1 : 0) - (inp.left ? 1 : 0), inp.space);
+    updateCar(c, dt, (inp.up ? 1 : 0) - (inp.down ? 1 : 0), clamp((inp.right ? 1 : 0) - (inp.left ? 1 : 0) + (tw > 0.5 && !c.sp.boat ? Math.sin(G.t * 2.3) * 0.17 * tw * clamp(Math.abs(c.vf) / 120, 0, 1) : 0), -1, 1), inp.space);
     if (!P.car) return;                      // went for a swim
     P.x = c.x; P.y = c.y; P.a = c.a; P.vx = c.vx; P.vy = c.vy;
-    if (inp.horn) { if (c.type === 'icevan') { if (inp.hornHit) AudioFX.jingle('toggle'); } else if (c.type === 'police') { if (inp.hornHit) c.siren = !c.siren; } else c.horn = 0.1; }
+    if (inp.horn) { if (c.type === 'icevan') { if (inp.hornHit) AudioFX.jingle('toggle'); } else if (c.type === 'police' || c.type === 'polvan') { if (inp.hornHit) c.siren = !c.siren; }
+      else if (c.sp.tank) { c.turret = c.a; if (inp.hornHit && !c.dead) { if (c.fireT > 0) hint('Reloading...', 0.6); else { c.fireT = 1.5; fireShell(c, c.x + Math.cos(c.a) * 430, c.y + Math.sin(c.a) * 430, false); } } }
+      else c.horn = 0.1; }
+    if (c.sp.tank) c.turret = c.a;
     if (inp.enterHit) exitCar();
   } else {
     let mx = (inp.right ? 1 : 0) - (inp.left ? 1 : 0), my = (inp.down ? 1 : 0) - (inp.up ? 1 : 0);
     if (P.freeze > 0) { P.freeze -= dt; mx = 0; my = 0; }
     const m = hyp(mx, my), sp = P.box ? 118 : P.carrying ? 122 : 132;
+    if (m > 0 && tw > 0.5) { const wob = Math.sin(G.t * 2.9) * 0.2 * tw, cw = Math.cos(wob), sw = Math.sin(wob), ox = mx; mx = ox * cw - my * sw; my = ox * sw + my * cw; }      // weaving hame
     if (m > 0) { mx /= m; my /= m; P.a += angDiff(P.a, Math.atan2(my, mx)) * Math.min(1, dt * 14); P.walk += dt * 13; }
     P.moving = m > 0;
     P.vx = lerp(P.vx, mx * sp, Math.min(1, dt * 12)); P.vy = lerp(P.vy, my * sp, Math.min(1, dt * 12));
@@ -90,11 +103,19 @@ function collideWalker(P) {
 
 // ---------- world setup ----------
 function initWorld() {
-  cars.length = 0; peds.length = 0; pickups.length = 0;
+  cars.length = 0; peds.length = 0; pickups.length = 0; copShots.length = 0; helis.length = 0;
   for (const p of PARKED) makeCar(p.type, p.x, p.y, p.a, { keep: !!p.keep, tag: p.tag || '', parked0: true });
   const herd = (kind, n, home, v0, v1) => { for (let i = 0; i < n; i++) { const s = makePed(home.x + rnd(40, home.w - 40), home.y + rnd(40, home.h - 40), kind); s.state = 'wander'; s.home = home; s.keep = true; s.spd = rnd(v0, v1); s.animal = kind !== 'ped'; if (kind === 'ped') { s.hiker = true; s.hat = 2; } } };
   herd('sheep', 12, SHEEP_FIELD, 24, 36); herd('turkey', 16, TURKEY_FIELD, 26, 44);
   herd('ped', 4, { x: LM.tower.x + 70, y: LM.tower.y - 130, w: 230, h: 270 }, 30, 44);                 // hikers taking in the view from the top of Scolty
+  // Banchory Cricket Club, hard at it in Burnett Park: two at the crease and five in the field
+  for (let i = 0; i < 7; i++) {
+    const bat = i < 2, home = bat ? { x: CRICKET.x + (i ? 1 : -1) * 40 - 35, y: CRICKET.y - 35, w: 70, h: 70 } : CRICKET_BOX;
+    const s = makePed(home.x + home.w / 2 + (bat ? 0 : rnd(-150, 150)), home.y + home.h / 2 + (bat ? 0 : rnd(-110, 110)));
+    s.state = 'wander'; s.home = home; s.keep = true; s.cricketer = true; s.bat = bat; s.spd = bat ? 26 : rnd(34, 50); s.shirt = '#f6f3e6'; s.legs = '#ebe8da'; s.hat = i % 3 === 2 ? 0 : 1; s.hatCol = bat ? '#16324f' : '#f6f3e6'; s.chatT = rnd(3, 25);
+  }
+  // Big Eck, purveyor of fish and ordnance, in the grounds of Glen O' Dee
+  { const d = makePed(SPOTS.dealer.x, SPOTS.dealer.y); d.state = 'wait'; d.stay = true; d.keep = true; d.dealer = true; d.post = { x: SPOTS.dealer.x, y: SPOTS.dealer.y }; d.a = Math.PI / 2; d.shirt = '#4a4034'; d.legs = '#2b2b2b'; d.hat = 1; d.hatCol = '#6b6f58'; d.hair = '#9a9a9a'; G.dealer = d; }
   G.dinghy = makeCar('dinghy', DINGHY_SPOT.x, DINGHY_SPOT.y, 0, { keep: true, tag: 'dinghy', moored: true }); G.dnT = 0; salmon.length = 0;
   ROWIES.forEach((p, i) => pickups.push({ x: p.x, y: p.y, type: 'rowie', id: i, gone: !!G.rowies[i], t: 0 }));
   PIES.forEach(p => pickups.push({ x: p.x, y: p.y, type: 'pie', gone: false, t: 0 }));
@@ -129,7 +150,7 @@ const WEAPONS = {
 };
 const WORDER = ['fist', 'haddock', 'tattie', 'haggis', 'rocket'];
 function cycleWeapon() { const P = player; let i = WORDER.indexOf(P.weapon); for (let k = 0; k < 5; k++) { i = (i + 1) % 5; const w = WORDER[i]; if (P.has[w] && (WEAPONS[w].melee || P.ammo[w] > 0)) { P.weapon = w; AudioFX.tick(); return; } } }
-function carReact(c, heat) { if (c.ai) { c.ai.stun = Math.max(c.ai.stun, 0.6); c.horn = 0.5; } if (c !== player.car) addHeat(c.type === 'police' ? heat * 3 : heat); }
+function carReact(c, heat) { if (c.ai) { c.ai.stun = Math.max(c.ai.stun, c.sp.tank ? 0.15 : 0.6); c.horn = 0.5; } if (c !== player.car) addHeat(c.sp.cop ? heat * 3 : heat); }
 function useWeapon() {
   const P = player, w = P.weapon, Wp = WEAPONS[w], fx = Math.cos(P.a), fy = Math.sin(P.a);
   P.shoveCd = Wp.cd; P.shove = 0.2;
@@ -138,7 +159,7 @@ function useWeapon() {
     for (const p of peds) { const dx = p.x - P.x, dy = p.y - P.y, d = hyp(dx, dy); if (d < Wp.reach && p.state !== 'fly' && p.state !== 'down' && (dx * fx + dy * fy) > 0) { knockPed(p, fx * Wp.power, fy * Wp.power, !p.animal); hit = true; } }
     for (const p of PROPS) { if (p.knocked || p.solid) continue; const dx = p.x - P.x, dy = p.y - P.y; if (Math.abs(dx) < Wp.reach && Math.abs(dy) < Wp.reach && (dx * fx + dy * fy) > 0) { p.knocked = true; p.vx = fx * Wp.power * 0.9; p.vy = fy * Wp.power * 0.9; p.vr = rnd(-8, 8); p.z = 1; p.vz = 120; AudioFX.clatter(0.6); hit = true; } }
     if (w === 'haddock') {
-      for (const c of cars) { const dx = c.x - P.x, dy = c.y - P.y, d = hyp(dx, dy); if (d < Wp.reach + c.sp.len / 2 && (dx * fx + dy * fy) > 0 && !c.sink) { c.vx += fx * 50 / c.sp.mass; c.vy += fy * 50 / c.sp.mass; if (!c.dead) { c.dmg += 4; if (c.dmg >= 100) killCar(c); } carReact(c, 0.15); hit = true; } }
+      for (const c of cars) { const dx = c.x - P.x, dy = c.y - P.y, d = hyp(dx, dy); if (d < Wp.reach + c.sp.len / 2 && (dx * fx + dy * fy) > 0 && !c.sink) { c.vx += fx * 50 / c.sp.mass; c.vy += fy * 50 / c.sp.mass; if (!c.dead && !c.sp.tank) { c.dmg += 4; if (c.dmg >= 100) killCar(c); } carReact(c, 0.15); hit = true; } }
       AudioFX.slap(); for (let i = 0; i < 4; i++) part(P.x + fx * 22, P.y + fy * 22, fx * 80 + rnd(-60, 60), fy * 80 + rnd(-60, 60), 0.35, 2.5, '#cfe8f5', 'dot');
       if (hit) floater(P.x + fx * 30, P.y + fy * 30 - 10, pick(['SLAP!', 'SKELP!', 'THWAP!']), '#cfe8f5');
     }

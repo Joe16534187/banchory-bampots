@@ -26,6 +26,7 @@ function drawBuilding(b) {
   } else if (b.style === 'spire') {
     ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.beginPath(); ctx.moveTo(rx0, ry0); ctx.lineTo(rx0 + rw / 2, ry0 + rh / 2); ctx.lineTo(rx0, ry1); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.moveTo(rx1, ry0); ctx.lineTo(rx0 + rw / 2, ry0 + rh / 2); ctx.lineTo(rx1, ry1); ctx.fill();
     ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(rx0, ry0); ctx.lineTo(rx1, ry1); ctx.moveTo(rx1, ry0); ctx.lineTo(rx0, ry1); ctx.stroke(); ctx.fillStyle = '#e8c74a'; circ(rx0 + rw / 2, ry0 + rh / 2, 3); ctx.fill();
+  } else if (b.style === 'ruin') { drawRuinTop(b, rx0, ry0, rw, rh);
   } else if (b.style === 'tower') {
     ctx.strokeStyle = '#5f5a53'; ctx.lineWidth = 6; ctx.strokeRect(rx0 + 3, ry0 + 3, rw - 6, rh - 6); ctx.fillStyle = '#6d675f'; ctx.fillRect(rx0 + rw / 2 - 5, ry0 + rh / 2 - 5, 10, 10);
   }
@@ -71,7 +72,7 @@ function drawWorld() {
   }
   for (const p of peds) if (p.state === 'down' && onScreen(p.x, p.y, 30)) drawPerson(p);
   for (const p of peds) if (p.state !== 'down' && p.z <= 0 && onScreen(p.x, p.y, 30)) drawPerson(p);
-  if (!player.car && player.z <= 0 && G.state !== 'title') drawPerson(player);
+  if (!player.car && player.z <= 0 && G.state !== 'title' && !player.inside) drawPerson(player);
   for (const c of cars) if (onScreen(c.x, c.y, 80)) drawCar(c);
   // particles
   for (const p of parts) {
@@ -91,5 +92,5 @@ function drawWorld() {
     ctx.restore();
   }
   for (const f of fx) { const k = f.t / f.dur, x = lerp(f.x0, f.x1, k), y = lerp(f.y0, f.y1, k); drawSpade(x, y, f.t * 14, 1.2 + Math.sin(k * Math.PI) * 1.6); }
-  drawTall();
+  drawTall(); drawSky();
 }

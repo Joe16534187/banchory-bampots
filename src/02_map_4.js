@@ -21,6 +21,7 @@ PARKED.push({ x: 1306 * S, y: 1532 * S, a: Math.PI / 2, type: 'police' }, { x: 4
   for (const p of [[2800, 1900], [2800, 2100], [3100, 1900], [3100, 2140], [960, 860], [1300, 1000], [1140, 1060], [3060, 2424], [3450, 2722], [2470, 1560], [2500, 1600]]) prop('bench', p[0] * S, p[1] * S);
   prop('post', 2440 * S - 12, 1465 * S + 8, { r: 7 }); prop('post', 2610 * S, 1960 * S, { r: 7 });
   prop('totem', 2676 * S, 2250 * S, { r: 7 }); prop('memorial', 1484 * S, 1518 * S, { r: 11 });
+  prop('stall', 1262 * S, 322 * S, { r: 15 });                                 // the dealer's table at Glen O' Dee
 })();
 
 // ---------- static collision grid ----------
@@ -53,7 +54,7 @@ const ZONES = [
   ['Bridge of Dee', 2700, 2400, 150, 290], ['Bridge of Feugh', 3200, 2660, 200, 150], ['Scolty Hill', 0, 2890, 1250, 910], ['Bellfield Park', 2740, 1830, 440, 380], ['Bellfield', 2570, 1700, 400, 130],
   ['Banchory Golf Club', 900, 1540, 520, 840], ['Banchory Golf Club', 1380, 1880, 1140, 580], ['Tor-na-Coille', 1000, 1150, 420, 262], ['Burnett Park', 880, 740, 520, 370],
   ['Bridge Street', 1760, 1700, 740, 130], ['High Street', 1700, 1370, 1300, 290], ['Dee Street', 2380, 1650, 480, 760],
-  ['Banchory Primary School', 3035, 830, 300, 550], ['Banchory Academy', 3335, 830, 335, 550], ['Turkey Farm', 4560, 3040, 620, 700], ['Falls of Feugh', 3180, 2760, 220, 140], ['Arbeadie Road', 2900, 0, 200, 1380], ['Station Road', 3000, 1380, 700, 290], ['North Deeside Road', 3700, 1380, 1620, 320],
+  ['Banchory Primary School', 3035, 830, 300, 550], ['Banchory Academy', 3335, 830, 335, 550], ['Maryfield Farm', 4560, 3040, 620, 700], ["Glen O' Dee", 1080, 130, 420, 330], ['Falls of Feugh', 3180, 2760, 220, 140], ['Arbeadie Road', 2900, 0, 200, 1380], ['Station Road', 3000, 1380, 700, 290], ['North Deeside Road', 3700, 1380, 1620, 320],
   ['Raemoir Road', 3560, 0, 300, 1000], ['Hill of Banchory', 3700, 0, 1620, 1380], ['Watson Street', 2030, 1200, 970, 170], ['Mount Street', 1900, 800, 200, 580], ['Arbeadie', 2000, 600, 1300, 600],
   ['Ramsay Road', 1560, 780, 300, 600], ['Glassel Road', 600, 0, 400, 1400], ['Kinneskie Road', 1400, 1740, 400, 180], ['Inchmarlo Road', 0, 1300, 1700, 300], ['Auchattie', 1250, 2700, 1520, 500],
   ['South Deeside Road', 2700, 2600, 2700, 1300], ['Deeside', 0, 0, 5200, 3800]
