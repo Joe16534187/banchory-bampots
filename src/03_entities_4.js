@@ -33,7 +33,7 @@ function updatePlayer(dt, inp) {
   // a few pints in: it wears off in about half a minute a pint, and meantime nothing goes quite where you point it
   const tw = Math.min(P.tipsy, 4);
   if (P.tipsy > 0) {
-    P.tipsy = Math.max(0, P.tipsy - dt / 28); P.hicT = (P.hicT || 6) - dt;
+    P.tipsy = Math.max(0, P.tipsy - dt / TIPSY_SECS); P.hicT = (P.hicT || 6) - dt;
     if (P.hicT <= 0) { P.hicT = rnd(5, 11) / Math.max(1, tw); if (tw >= 1.5 && !P.car) say(P, pick(['Hic!', 'Hic!', 'Jusht the one.', 'Am fine.', 'Hic! Pardon.']), 1.2); }
     if (P.car && !P.car.sp.boat && tw >= 2 && G.heat < 1 && G.state === 'play') for (const o of cars) if (o.type === 'police' && o.ai && hyp(o.x - P.x, o.y - P.y) < 230) { G.heat = 1.05; G.unseenT = 0; hint('The polis smell the heavy on you. Drink driving!', 3.5); break; }
   }
@@ -103,10 +103,11 @@ function collideWalker(P) {
 
 // ---------- world setup ----------
 function initWorld() {
-  cars.length = 0; peds.length = 0; pickups.length = 0; copShots.length = 0; helis.length = 0;
+  cars.length = 0; peds.length = 0; pickups.length = 0; copShots.length = 0; helis.length = 0; splats.length = 0; G.herd = null; G.funeral = null;
   for (const p of PARKED) makeCar(p.type, p.x, p.y, p.a, { keep: !!p.keep, tag: p.tag || '', parked0: true });
-  const herd = (kind, n, home, v0, v1) => { for (let i = 0; i < n; i++) { const s = makePed(home.x + rnd(40, home.w - 40), home.y + rnd(40, home.h - 40), kind); s.state = 'wander'; s.home = home; s.keep = true; s.spd = rnd(v0, v1); s.animal = kind !== 'ped'; if (kind === 'ped') { s.hiker = true; s.hat = 2; } } };
-  herd('sheep', 12, SHEEP_FIELD, 24, 36); herd('turkey', 16, TURKEY_FIELD, 26, 44);
+  const herd = (kind, n, home, v0, v1) => { for (let i = 0; i < n; i++) { const s = makePed(home.x + rnd(40, home.w - 40), home.y + rnd(40, home.h - 40), kind); s.state = 'wander'; s.home = home; s.keep = true; s.spd = rnd(v0, v1); s.animal = kind !== 'ped'; if (kind === 'ped') { s.hiker = true; s.hat = 2; } if (kind === 'cow') { s.shirt = pick(['#b5651d', '#c2742a', '#a85a1c', '#d9b77a', '#2b2622']); s.chatT = rnd(3, 30); } } };
+  herd('sheep', 12, SHEEP_FIELD, 24, 36); herd('turkey', 16, TURKEY_FIELD, 26, 44); herd('cow', 9, COW_HOME, 14, 22);
+  makePagans();
   herd('ped', 4, { x: LM.tower.x + 70, y: LM.tower.y - 130, w: 230, h: 270 }, 30, 44);                 // hikers taking in the view from the top of Scolty
   // Banchory Cricket Club, hard at it in Burnett Park: two at the crease and five in the field
   for (let i = 0; i < 7; i++) {

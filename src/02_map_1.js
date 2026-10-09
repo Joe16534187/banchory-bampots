@@ -28,6 +28,7 @@ N('ws1', 2000, 1272); N('wsM', 2500, 1272); N('ws2', 3000, 1272); N('n1', 2000, 
 N('nR1', 3700, 1000); N('n5', 3760, -120, 1); N('ac', 3450, 1345); N('t1', 4000, 1000); N('hb1', 4300, 1000); N('wb', 4700, 830); N('sm1', 4600, 1420);
 N('r1', 1700, 800); N('w2', 1450, 620); N('wG', 800, 640); N('w3', 700, -120, 1); N('tc', 1210, 1350); N('bf', 2600, 1768); N('lg', 2972, 2387);
 N('gdJ', 1220, 627); N('gd1', 1290, 432);                 // the track up to Glen O' Dee
+N('pgJ', 768.4, 400); N('pg1', 432, 400);                 // the forest track to the auld stanes, off the Glassel Road
 
 E('a0', 'aJ', 'main', ''); E('aJ', 'aG', 'main', ''); E('aJ', 'jt', 'track', ''); E('aG', 'aT', 'main', '', 'Inchmarlo Road'); E('aT', 'aL', 'main', '', 'Inchmarlo Road'); E('aL', 'a3', 'main', 'rp', 'Inchmarlo Road');
 E('a3', 'a4', 'main', 'py', 'High Street'); E('a4', 'a5', 'main', 'py', 'High Street'); E('a5', 'a6', 'main', 'py', 'High Street');
@@ -41,7 +42,7 @@ E('ws1', 'wsM', 'street', 'rp', 'Watson Street'); E('wsM', 'ws2', 'street', 'rp'
 E('n1', 'nM', 'street', 'r', 'Arbeadie Road'); E('nM', 'nW', 'street', 'r'); E('nW', 'nRN', 'street', 'r');
 E('aR', 'nR1', 'main', 'rp', 'Raemoir Road'); E('nR1', 'nRN', 'main', 'r', 'Raemoir Road'); E('nRN', 'n5', 'main', 'r', 'Raemoir Road'); E('aS', 'ac', 'lane', 'p', 'Schoolhill');
 E('nR1', 't1', 'street', 'r'); E('t1', 'hb1', 'street', 'r'); E('hb1', 'a8', 'street', 'r'); E('t1', 't2', 'street', 'r'); E('hb1', 'wb', 'lane', ''); E('aB', 'sm1', 'lane', '');
-E('a3', 'r1', 'street', 'r', 'Ramsay Road'); E('r1', 'n1', 'street', 'r'); E('r1', 'w2', 'street', 'r'); E('w2', 'gdJ', 'street', ''); E('gdJ', 'wG', 'street', ''); E('gdJ', 'gd1', 'track', ''); E('aG', 'wG', 'street', '', 'Glassel Road'); E('wG', 'w3', 'street', '');
+E('a3', 'r1', 'street', 'r', 'Ramsay Road'); E('r1', 'n1', 'street', 'r'); E('r1', 'w2', 'street', 'r'); E('w2', 'gdJ', 'street', ''); E('gdJ', 'wG', 'street', ''); E('gdJ', 'gd1', 'track', ''); E('aG', 'wG', 'street', '', 'Glassel Road'); E('wG', 'pgJ', 'street', ''); E('pgJ', 'w3', 'street', ''); E('pgJ', 'pg1', 'track', '');
 E('aT', 'tc', 'lane', ''); E('d0', 'bf', 'lane', 'p'); E('d2', 'lg', 'lane', '');
 
 // all-pairs shortest paths, used by the polis
@@ -126,7 +127,7 @@ function carpark(x, y, w, h) {
 }
 
 // fields round the edge of town
-area('field', 40, 700, 620, 560, { crop: 'barley' }); area('field', 40, 1600, 800, 700, { crop: 'pasture' });
+area('field', 40, 700, 620, 560, { crop: 'barley' }); const COW_FIELD = area('field', 40, 1600, 800, 700, { crop: 'pasture' });
 area('field', 2100, 80, 840, 560, { crop: 'barley' }); area('field', 3900, 100, 700, 700, { crop: 'pasture' });
 area('field', 4400, 1760, 720, 600, { crop: 'barley' }); area('field', 3300, 1800, 950, 500, { crop: 'pasture' });
 area('field', 3700, 3440, 820, 330, { crop: 'barley' }); area('field', 4850, 300, 320, 900, { crop: 'plough' });

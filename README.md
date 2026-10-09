@@ -24,7 +24,7 @@ repository root.
 | P | Pause |
 | N | Sound on or off |
 
-Answer a ringing phone box to start a job: The Spade, Boxhead, Melting Point, Buggy Up Scolty and The Stag Do.
+Answer a ringing phone box to start a job: The Spade, Boxman, Melting Point, Buggy Up Scolty, The Stag Do and Hamlet.
 Progress is saved in the browser's local storage.
 
 ### The polis
@@ -37,6 +37,12 @@ The more stars, the worse it gets. Nobody dies: baton rounds cost a heart, shell
 | 2 | Riot van | Rams you and cuts you off, with the odd baton round |
 | 3 | Helicopter and more vans | Everyone fires, and cars will run you down on foot. The helicopter cannot see you under trees |
 | 4 | Tanks and army jeeps | Tanks shell you. A red ring shows where each shell will land |
+
+### Beasts
+
+Sheep and turkeys do not survive being run over, but a replacement runs out of the farm shed, so the numbers never
+change. The Highland coos at Inchmarlo Farm are harmless until something sets them stampeding: then a trampling costs
+two hearts.
 
 ### Spending money
 
@@ -53,8 +59,8 @@ The files in `src/` are ordinary scripts that share one global scope, so they mu
 |---|---|
 | `01_core.js` | Maths helpers and the seeded random generator used to lay out the town |
 | `02_map_*.js` | Roads, rivers, landmarks, generated houses and trees, collision grid, place names |
-| `03_entities_*.js` | Vehicles and driving model, traffic and police AI, pedestrians, the player, weapons, the dinghy. `03_entities_6.js` holds police weapons and the helicopter |
-| `04_missions_*.js` | Phone box jobs and pickups |
+| `03_entities_*.js` | Vehicles and driving model, traffic and police AI, pedestrians, the player, weapons, the dinghy. `03_entities_6.js` holds police weapons and the helicopter, `03_entities_7.js` the farm animals, the stampede and the folk at the stone circle |
+| `04_missions_*.js` | Phone box jobs and pickups. `04_missions_3.js` is the Hamlet job |
 | `04_shops.js` | Pubs, Big Eck's stall and Dod's Motors |
 | `05_render_*.js` | All drawing: ground, buildings, vehicles, people, HUD, map, shop and title screens |
 | `06_audio.js` | Synthesised sound (Web Audio) |

@@ -9,7 +9,8 @@ parkIn(CP_ACAD, ['hatch', 0, 'saloon', 0, 0, 'hatch', 0, 0, 0, 0, 0, 'van', 0, 0
 PARKED.push({ x: 1306 * S, y: 1532 * S, a: Math.PI / 2, type: 'police' }, { x: 4070 * S, y: 2951 * S, a: 0, type: 'tractor', keep: true }, { x: 4142 * S, y: 2951 * S, a: Math.PI, type: 'pickup' },
   { x: 3915 * S, y: 1570 * S, a: 0, type: 'saloon' }, { x: 4490 * S, y: 1605 * S, a: 0, type: 'hatch' }, { x: 4640 * S, y: 800 * S, a: Math.PI / 2, type: 'fourby' }, { x: 3170 * S, y: 2380 * S, a: 0, type: 'sport' },
   { x: 1160 * S, y: 1357 * S, a: Math.PI / 2, type: 'fourby' }, { x: 1262 * S, y: 1357 * S, a: -Math.PI / 2, type: 'saloon' },
-  { x: 1470 * S, y: 2050 * S, a: Math.PI / 2, type: 'buggy', keep: true, tag: 'buggy' }, { x: 1510 * S, y: 2050 * S, a: Math.PI / 2, type: 'buggy', keep: true }, { x: 2200 * S, y: 2200 * S, a: 0.4, type: 'buggy', keep: true }, { x: 960 * S, y: 1050 * S, a: 0.2, type: 'tractor', keep: true });
+  { x: 1470 * S, y: 2050 * S, a: Math.PI / 2, type: 'buggy', keep: true, tag: 'buggy' }, { x: 1510 * S, y: 2050 * S, a: Math.PI / 2, type: 'buggy', keep: true }, { x: 2200 * S, y: 2200 * S, a: 0.4, type: 'buggy', keep: true }, { x: 960 * S, y: 1050 * S, a: 0.2, type: 'tractor', keep: true },
+  { x: 606 * S, y: 1487 * S, a: 0, type: 'tractor', keep: true }, { x: 760 * S, y: 1487 * S, a: Math.PI, type: 'pickup' });
 (function furniture() {
   const kinds = ['tub', 'litter', 'bench', 'tub', 'litter'];
   let k = 0;
@@ -21,6 +22,8 @@ PARKED.push({ x: 1306 * S, y: 1532 * S, a: Math.PI / 2, type: 'police' }, { x: 4
   for (const p of [[2800, 1900], [2800, 2100], [3100, 1900], [3100, 2140], [960, 860], [1300, 1000], [1140, 1060], [3060, 2424], [3450, 2722], [2470, 1560], [2500, 1600]]) prop('bench', p[0] * S, p[1] * S);
   prop('post', 2440 * S - 12, 1465 * S + 8, { r: 7 }); prop('post', 2610 * S, 1960 * S, { r: 7 });
   prop('totem', 2676 * S, 2250 * S, { r: 7 }); prop('memorial', 1484 * S, 1518 * S, { r: 11 });
+  for (const p of [[690, 1500], [706, 1500], [698, 1487]]) prop('bale', p[0] * S, p[1] * S, { r: 15 });      // Inchmarlo Farm
+  for (let i = 0; i < 9; i++) { if (i === 0) continue; const an = i * TAU / 9; prop('stone', SPOTS.stanes.x + Math.cos(an) * 104, SPOTS.stanes.y + Math.sin(an) * 104, { r: 11, rot: an * 3.7, big: i % 3 === 0 }); }   // the auld stanes: a ring of nine, less the one on the east side where the track comes in
   prop('stall', 1262 * S, 322 * S, { r: 15 });                                 // the dealer's table at Glen O' Dee
 })();
 
@@ -56,9 +59,9 @@ const ZONES = [
   ['Bridge Street', 1760, 1700, 740, 130], ['High Street', 1700, 1370, 1300, 290], ['Dee Street', 2380, 1650, 480, 760],
   ['Banchory Primary School', 3035, 830, 300, 550], ['Banchory Academy', 3335, 830, 335, 550], ['Maryfield Farm', 4560, 3040, 620, 700], ["Glen O' Dee", 1080, 130, 420, 330], ['Falls of Feugh', 3180, 2760, 220, 140], ['Arbeadie Road', 2900, 0, 200, 1380], ['Station Road', 3000, 1380, 700, 290], ['North Deeside Road', 3700, 1380, 1620, 320],
   ['Raemoir Road', 3560, 0, 300, 1000], ['Hill of Banchory', 3700, 0, 1620, 1380], ['Watson Street', 2030, 1200, 970, 170], ['Mount Street', 1900, 800, 200, 580], ['Arbeadie', 2000, 600, 1300, 600],
-  ['Ramsay Road', 1560, 780, 300, 600], ['Glassel Road', 600, 0, 400, 1400], ['Kinneskie Road', 1400, 1740, 400, 180], ['Inchmarlo Road', 0, 1300, 1700, 300], ['Auchattie', 1250, 2700, 1520, 500],
+  ['Ramsay Road', 1560, 780, 300, 600], ['The Auld Stanes', 210, 270, 300, 260], ['Inchmarlo Farm', 40, 1496, 800, 804], ['Glassel Road', 600, 0, 400, 1400], ['Kinneskie Road', 1400, 1740, 400, 180], ['Inchmarlo Road', 0, 1300, 1700, 300], ['Auchattie', 1250, 2700, 1520, 500],
   ['South Deeside Road', 2700, 2600, 2700, 1300], ['Deeside', 0, 0, 5200, 3800]
 ].map(z => ({ name: z[0], x: z[1] * S, y: z[2] * S, w: z[3] * S, h: z[4] * S }));
 function zoneAt(x, y) { for (const z of ZONES) if (x >= z.x && x < z.x + z.w && y >= z.y && y < z.y + z.h) return z.name; return 'Banchory'; }
 const MAP_LABELS = [['Scolty Hill', 600, 3300], ['River Dee', 520, 2470], ['River Dee', 4350, 2640], ['Water of Feugh', 2620, 3440], ['Bellfield Park', 2950, 1990], ['Golf Course', 1900, 2270], ['Burnett Park', 1140, 950],
-  ['Bridge of Dee', 2600, 2560], ['Bridge of Feugh', 3090, 2672], ['Falls of Feugh', 3130, 2890], ['Dinghy', 150, 2360], ['To Aberdeen', 4950, 1560], ['To Braemar', 240, 1510], ['To Strachan', 3400, 3720]].map(l => ({ name: l[0], x: l[1] * S, y: l[2] * S }));
+  ['Bridge of Dee', 2600, 2560], ['Bridge of Feugh', 3090, 2672], ['Falls of Feugh', 3130, 2890], ['Dinghy', 150, 2360], ['The Auld Stanes', 430, 345], ['To Aberdeen', 4950, 1560], ['To Braemar', 240, 1510], ['To Strachan', 3400, 3720]].map(l => ({ name: l[0], x: l[1] * S, y: l[2] * S }));

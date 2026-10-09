@@ -2,6 +2,7 @@
 const BUGGY_SPOT = M(1470, 2050);
 for (const k in SPOTS) CLEAR.push({ x: SPOTS[k].x, y: SPOTS[k].y, r: 70 });
 CLEAR.push({ x: BELL_BED.x, y: BELL_BED.y, r: 70 });
+CLEAR.push({ x: SPOTS.stanes.x, y: SPOTS.stanes.y, r: 170 });      // the clearing roon the auld stanes
 CLEAR.push({ x: LM.tower.x + 26, y: LM.tower.y + 26, r: 190 });
 for (const b of BUNKERS) CLEAR.push({ x: b.x, y: b.y, r: Math.max(b.rx, b.ry) + 16 });
 for (const g of GOLFF.greens) CLEAR.push({ x: g.x, y: g.y, r: 76 });

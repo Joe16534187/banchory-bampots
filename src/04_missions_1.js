@@ -12,40 +12,49 @@ const MISSIONS = [
   {
     id: 'spade', title: 'The Spade', phone: PHONES.spade, reward: 500,
     start(m) {
-      pagerMsg("DODE: Fit like? I, eh, borrowed the greenkeeper's prize spade and the polis are asking questions. It's planted in the flower bed beside Banchory Primary School. Get rid o it!");
-      setObj('Dig the spade out of the flower bed beside Banchory Primary School', { x: SPOTS.spadeBed.x, y: SPOTS.spadeBed.y, r: 34 });
+      G.money = Math.max(G.money, 25);                                   // Dode stands you the first few if you are skint
+      pagerMsg("DODE: Fit like? I, eh, borrowed the greenkeeper's prize spade and the polis are asking questions. I need it gone, but nae sober man would touch the job. Awa to the pub and get yersel properly blootered first. There's drinking money in it if you're short.");
     },
     update(m, dt) {
       const P = player;
-      if (m.step === 0) {
+      if (m.step === 0) {                                                // first, Dutch courage
+        let pub = PUBS[0], bd = 1e9; for (const s of PUBS) { const d = hyp(s.at.x - P.x, s.at.y - P.y); if (d < bd) { bd = d; pub = s; } }
+        setObj('Get blootered. Press T at a pub door and keep drinking  (you are ' + (P.tipsy >= 0.5 ? TIPSY[clamp(Math.round(P.tipsy), 1, 4)].toLowerCase() : 'sober') + ')', { x: pub.at.x, y: pub.at.y, r: 30 });
+        if (P.tipsy >= 3.5) {
+          m.step = 1; G.timer = P.tipsy * TIPSY_SECS; AudioFX.pickup();    // the clock is however long the drink lasts
+          pagerMsg("DODE: That's the stuff. Noo, the spade is planted in the flower bed beside Banchory Primary School, up Arbeadie Road. Dig it oot and get rid o it!");
+          setObj('Dig the spade out of the flower bed beside Banchory Primary School', { x: SPOTS.spadeBed.x, y: SPOTS.spadeBed.y, r: 34 });
+        }
+      } else if (m.step === 1) {
         if (!P.car && near(P, SPOTS.spadeBed, 36)) {
-          m.step = 1; P.carrying = 'spade'; G.heat = Math.max(G.heat, 1.4); G.unseenT = 0; AudioFX.pickup();
+          m.step = 2; P.carrying = 'spade'; G.heat = Math.max(G.heat, 1.4); G.unseenT = 0; AudioFX.pickup();
           pagerMsg('The jannie clocked you and phoned the polis. Doon Dee Street to the Bridge of Dee and chuck it in, quick!');
           setObj('Take the spade to the Bridge of Dee. On foot, press SPACE to chuck it in', { x: SPOTS.bridge.x, y: SPOTS.bridge.y, r: 70 });
         } else if (P.car && near(P, SPOTS.spadeBed, 90)) hint('Get oot and dig', 0.5);
-      } else if (m.step === 1) { if (P.car && near(P, SPOTS.bridge, 90) && Math.abs(P.car.vf) < 60) hint('Get oot, then press SPACE', 0.5); }
+      } else if (m.step === 2) { if (P.car && near(P, SPOTS.bridge, 90) && Math.abs(P.car.vf) < 60) hint('Get oot, then press SPACE', 0.5); }
       else { m.d.t -= dt; if (m.d.t <= 0) missionPass('Evidence? What evidence?'); }
     },
     event(m, ev) {
       const P = player;
-      if (ev === 'action' && m.step === 1 && !P.car) {
+      if (ev === 'action' && m.step === 2 && !P.car) {
         if (!near(P, SPOTS.bridge, 84)) { if (riverDist(P.x, P.y) < 120) hint('Get to the middle of the bridge first'); return; }
         const dir = Math.cos(P.a) >= 0 ? 1 : -1;
-        m.step = 2; m.d.t = 1.6; P.carrying = null; P.shove = 0.25; setObj('', null); G.heat = 0;
+        m.step = 3; m.d.t = 1.6; G.timer = null; P.carrying = null; P.shove = 0.25; setObj('', null); G.heat = 0;
         fx.push({ type: 'spade', x0: P.x, y0: P.y, x1: P.x + dir * 175, y1: P.y + rnd(-30, 30), t: 0, dur: 0.95 }); AudioFX.whoosh();
         return 'handled';
       }
-      if (ev === 'drookit' && m.step === 1) { missionPass('In you went, spade and all. That works.'); return 'handled'; }
+      if (ev === 'drookit' && m.step === 2) { missionPass('In you went, spade and all. That works.'); return 'handled'; }
+      if (ev === 'timeout') { missionFail('The drink wore off, and so did your nerve'); return 'handled'; }
     }
   },
   {
-    id: 'box', title: 'Boxhead', phone: PHONES.box, reward: 400,
+    id: 'box', title: 'Boxman', phone: PHONES.box, reward: 400,
     start(m) {
       player.box = true; G.timer = 48;
       pagerMsg("IT'S A DARE: Run fae the Academy to Continental Creams on Dee Street wi this box on your head. Doon Schoolhill, along Station Road and the High Street, left at the lights. No peeking, no motors, and nae arrow to help you!");
       setObj('Leg it to Continental Creams on Dee Street', { x: SPOTS.ccDoor.x, y: SPOTS.ccDoor.y, r: 44 });
     },
-    update(m) { if (near(player, SPOTS.ccDoor, 46) && !player.car && player.knock <= 0) { m.bonus = Math.round(G.timer) * 5; missionPass('A double nougat for the boxhead.'); } },
+    update(m) { if (near(player, SPOTS.ccDoor, 46) && !player.car && player.knock <= 0) { m.bonus = Math.round(G.timer) * 5; missionPass('A double nougat for the boxman.'); } },
     event(m, ev) {
       if (ev === 'timeout') { missionFail('Too slow. The ice cream shop has shut.'); return 'handled'; }
       if (ev === 'drookit') { missionFail('The box went soggy'); return 'handled'; }

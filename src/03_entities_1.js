@@ -8,6 +8,7 @@ const player = { x: SPOTS.start.x, y: SPOTS.start.y, a: Math.PI / 2, vx: 0, vy: 
   skin: '#f1c9a5', shirt: '#ffd21f', hair: '#3a2a1c', legs: '#2d3a55', hat: 0, kind: 'player', state: 'walk',
   weapon: 'fist', has: { fist: true }, ammo: { tattie: 0, haggis: 0, rocket: 0 }, freeze: 0, armour: 0, tipsy: 0, inside: false };
 const cars = [], peds = [], parts = [], floaters = [], pickups = [], shots = [], salmon = [], copShots = [], helis = [];
+const TIPSY_SECS = 28;                              // how long one level of drink takes to wear off
 const NO_UP = {};                               // a motor with nothing bought for it at Dod's
 const SKID_MAX = 500, skids = new Float32Array(SKID_MAX * 5); let skidN = 0, skidI = 0;
 

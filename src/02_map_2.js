@@ -1,6 +1,8 @@
 'use strict';
 const SHEEP_FIELD = area('field', 3700, 3000, 800, 380, { crop: 'pasture', sheep: true }); reserve(3700, 3000, 800, 380);
 const TURKEY_FIELD = area('field', 4580, 3300, 560, 420, { crop: 'pasture' }); reserve(4560, 3040, 620, 700);
+const COW_HOME = { x: 210 * S, y: 1622 * S, w: 612 * S, h: 656 * S };          // where the coos graze: the field west of the polis station, clear of the dinghy track
+const SHED = { sheep: M(3962, 2978), turkey: M(4700, 3273), cow: M(730, 1592) };   // shed doors: where a replacement beast comes running out
 const SCOLTY = { x: 600 * S, y: 3450 * S, r: 560 * S };
 // parks and the golf course (west of Dee Street, between Inchmarlo Road and the river)
 const BELLFIELD = area('park', 2740, 1850, 420, 350, { name: 'Bellfield Park' }); reserve(2740, 1850, 420, 350);
@@ -22,6 +24,7 @@ const CP_BELL = carpark(2580, 1712, 205, 112), CP_SHOP = carpark(4400, 1250, 400
   CP_SCOLTY = carpark(1435, 2978, 135, 76), CP_ACAD = carpark(3370, 1270, 172, 76);
 const PLAYGROUND = hard(3165, 1040, 125, 100, 'play'), SQUARE = hard(2436, 1535, 86, 84, 'square');
 const YARD_POLIS = hard(1276, 1497, 60, 70), YARD_TURKEY = hard(4700, 3125, 220, 64), YARD_GARAGE = hard(3796, 1550, 138, 40), YARD_PETROL = hard(4430, 1590, 120, 30), YARD_FARM = hard(4030, 2918, 150, 66), YARD_TOR = hard(1125, 1335, 170, 44);
+const YARD_COW = hard(556, 1462, 246, 50);                                       // Inchmarlo Farm's yard, on the south side of the road
 reserve(1080, 130, 420, 310); const YARD_GLEN = hard(1202, 272, 176, 150, 'rubble');           // the grounds of Glen O' Dee
 
 // ---------- buildings ----------
@@ -75,6 +78,9 @@ L('feugh', 'Falls of Feugh Tearoom', B(3400, 2640, 92, 60, { label: 'TEAROOM', w
 // Glen O' Dee: the old sanatorium, long gone to ruin, in the woods north of Burnett Park
 // (built without the random stone and slate picks, so adding it leaves every other house in town exactly as it was)
 function ruin(x, y, w, h, label) { const b = { x: x * S, y: y * S, w: w * S, h: h * S, ht: 3, wall: '#a8a294', roof: '#3d3f3a', style: 'ruin', label: label || '' }; BUILDINGS.push(b); return b; }
+// Inchmarlo Farm: farmhouse and byre for the coo field (fixed colours, again so the generated houses do not move)
+function Bfix(x, y, w, h, o) { const b = Object.assign({ x: x * S, y: y * S, w: w * S, h: h * S, ht: 2, wall: '#ded8c8', roof: '#57626f', style: 'pitch', label: '' }, o || {}); BUILDINGS.push(b); return b; }
+L('cowfarm', 'Inchmarlo Farm', Bfix(560, 1516, 96, 56, { label: 'INCHMARLO|FARM', chim: true, house: false })); Bfix(668, 1516, 132, 70, { label: 'BYRE', wall: '#7a5a48', roof: '#8a3f33' });
 L('glen', "Glen O' Dee", ruin(1130, 180, 320, 92, "GLEN O' DEE")); ruin(1130, 272, 72, 70); ruin(1378, 272, 72, 70);
 L('turkey', 'Maryfield Farm', B(4600, 3205, 200, 62, { label: 'MARYFIELD FARM', ht: 1, wall: '#9c8f7f', roof: '#b9b2a9' })); B(4830, 3205, 200, 62, { ht: 1, wall: '#9c8f7f', roof: '#a8a297' }); B(4960, 3090, 92, 56, { wall: HARL[1], roof: TILE[1], chim: true, house: true });
 const PLOTS = [];
@@ -85,14 +91,15 @@ const HAND_BUILT = BUILDINGS.length;
 
 // ---------- props, pickups, phones (placed before houses so they stay clear) ----------
 const PROPS = [], TREES = [], PARKED = [];
-function prop(type, x, y, o) { const p = Object.assign({ type, x, y, x0: x, y0: y, rot: 0, vx: 0, vy: 0, vr: 0, knocked: false, solid: type === 'phone' || type === 'post' || type === 'totem' || type === 'memorial' || type === 'stall', r: 8 }, o || {}); PROPS.push(p); return p; }
-const PHONES = { spade: M(2588, 1880), box: M(3476, 1362), ice: M(2474, 1730), buggy: M(1570, 1918), stag: M(1830, 1471.5) };
+function prop(type, x, y, o) { const p = Object.assign({ type, x, y, x0: x, y0: y, rot: 0, vx: 0, vy: 0, vr: 0, knocked: false, solid: type === 'phone' || type === 'post' || type === 'totem' || type === 'memorial' || type === 'stall' || type === 'stone', r: 8 }, o || {}); PROPS.push(p); return p; }
+const PHONES = { spade: M(2588, 1880), box: M(3476, 1362), ice: M(2474, 1730), buggy: M(1570, 1918), stag: M(1830, 1471.5), pig: M(534, 1488) };
 for (const k in PHONES) { prop('phone', PHONES[k].x, PHONES[k].y, { r: 10 }); CLEAR.push({ x: PHONES[k].x, y: PHONES[k].y, r: 60 }); }
 const SPOTS = {     // mission places, in pixels
   start: M(2300, 1528.5), spadeBed: M(3120, 1300), bridge: M(2770, 2540), ccDoor: M(2452, 1675), tower: M(612, 3492),
   primaryGate: M(3012, 1200), burnettGate: M(842, 930), golfDoor: M(1560, 1880), bellCP: M(2680, 1768),
   stagP: M(2300, 1514), burnettP: M(2140, 1486), douglasP: M(2060, 1514), skinnerP: M(4135, 1516), kirkP: M(1905, 1486),
   respray: M(3865, 1570), polisDoor: M(1210, 1482), healthDoor: M(2870, 1806), academyGate: M(3450, 1365),
-  dealer: M(1300, 334), torDoor: M(1205, 1331), lodgeDoor: M(3002, 2360)
+  dealer: M(1300, 334), torDoor: M(1205, 1331), lodgeDoor: M(3002, 2360),
+  stanes: M(352, 400), pigStart: M(520, 1930)
 };
 const BELL_BED = M(2950, 2020);                 // the flower bed in Bellfield Park

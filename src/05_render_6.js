@@ -48,7 +48,7 @@ function drawMap() {
   otext('Banchory', mx, 46, 40, COL.yellow, 'left'); otext('M to close', mx + mw, 46, 20, '#f4efe0', 'right', 3.5);
   ctx.imageSmoothingEnabled = true; ctx.drawImage(mapCanvas, mx, my, mw, mh); ctx.strokeStyle = '#141414'; ctx.lineWidth = 4; ctx.strokeRect(mx, my, mw, mh);
   const fs = clamp(W / 80, 10, 15);
-  const lo = { burnett: [-6, -16], stag: [26, 20], douglas: [-36, 20], cc: [-58, 26], polis: [-10, 22], kirk: [-52, -12], feugh: [84, -24], health: [44, -10], lodge: [56, 10], golf: [-10, 22], tower: [0, 22], skinner: [0, -14], garage: [20, 22], scout: [-50, 8], tor: [0, -14], academy: [42, -16], primary: [-62, -28], shop: [0, -14], barn: [0, -12], farm: [30, 18], turkey: [0, -12], glen: [0, -14] };
+  const lo = { burnett: [-6, -16], stag: [26, 20], douglas: [-36, 20], cc: [-58, 26], polis: [-10, 22], kirk: [-52, -12], feugh: [84, -24], health: [44, -10], lodge: [56, 10], golf: [-10, 22], tower: [0, 22], skinner: [0, -14], garage: [20, 22], scout: [-50, 8], tor: [0, -14], academy: [42, -16], primary: [-62, -28], shop: [0, -14], barn: [0, -12], farm: [30, 18], turkey: [0, -12], glen: [0, -14], cowfarm: [-8, 22] };
   ctx.strokeStyle = 'rgba(20,20,20,0.7)'; ctx.lineWidth = 1.5;
   for (const key in LM) { const b = LM[key], o = lo[key] || [0, -3], bx = mx + (b.x + b.w / 2) * k, byy = my + (b.y + b.h / 2) * k; if (lo[key]) { ctx.beginPath(); ctx.moveTo(bx, byy); ctx.lineTo(bx + o[0] * 0.6, byy + o[1] * 0.6); ctx.stroke(); } otext(b.lm, bx + o[0], byy + o[1] + (o[1] >= 0 ? fs * 0.4 : -2), fs, '#fff', 'center', 3); }
   for (const l of MAP_LABELS) otext(l.name, mx + l.x * k, my + l.y * k, fs * 1.1, l.name.startsWith('To ') ? '#ffd9a0' : '#d8f0c8', 'center', 3);

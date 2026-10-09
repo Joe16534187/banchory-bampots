@@ -76,7 +76,7 @@ function update(dt, first) {
   G.spawnT -= dt; if (G.spawnT <= 0) { G.spawnT = 0.2; spawnTraffic(); spawnPed(); }
   updateSalmon(dt);
   if (!title) {
-    updatePolice(dt); updateMissions(dt); updatePickups(dt); updateShots(dt); updateCopShots(dt); G.nearShop = shopNear(); updatePzazz(dt); updateDinghy(dt);
+    updatePolice(dt); updateMissions(dt); updatePickups(dt); updateShots(dt); updateCopShots(dt); updateSplats(dt); G.nearShop = shopNear(); updatePzazz(dt); updateDinghy(dt);
     G.zoneT -= dt; G.znT = (G.znT || 0) - dt; if (G.znT <= 0) { G.znT = 0.5; const z = zoneAt(P.x, P.y); if (z !== G.zone) { G.zone = z; G.zoneT = 4; } }
     if (!G.pager && G.pagerQ.length) G.pager = { text: G.pagerQ.shift(), n: 0, hold: 0 };
     if (G.pager) { const pg = G.pager; if (pg.n < pg.text.length) { const b = Math.floor(pg.n); pg.n += dt * 55; if (Math.floor(pg.n) > b && Math.floor(pg.n) % 3 === 0) AudioFX.tick(); } else { pg.hold += dt; if (pg.hold > (G.pagerQ.length ? 3 : 8)) G.pager = null; } }
@@ -94,7 +94,7 @@ function updateAudio(dt) {
     for (const h of helis) heli = Math.max(heli, clamp(1 - hyp(h.x - P.x, h.y - P.y) / 1300, 0, 1));
     if (!G.mission) for (const d of MISSIONS) ring = Math.max(ring, clamp(1 - hyp(d.phone.x - P.x, d.phone.y - P.y) / 650, 0, 1));
   }
-  if (!play) AudioFX.nitro = 0;
+  if (!play) { AudioFX.nitro = 0; AudioFX.rumble = 0; }
   AudioFX.update(dt, { inCar: play && !!c, speed: c ? carSpeed(c) : 0, type: c ? c.type : '', thr: inp.up || inp.down, dead: c && (c.dead || c.sp.boat), horn, siren, ring, heli, t: G.t });
   if (!play) AudioFX.skid = 0;
 }
@@ -116,7 +116,7 @@ function boot() {
   window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (G.state === 'play') G.state = 'pause'; });
   canvas.addEventListener('pointerdown', () => { canvas.focus(); AudioFX.init(); if (G.state === 'title') startGame(); else if (G.state === 'pause') G.state = 'play'; else if (G.state === 'shop') { /* stay at the counter */ } });
   if (document.fonts && document.fonts.load) document.fonts.load("40px 'Bangers'").catch(() => {});
-  window.__bb = { FALLS, DINGHY_SPOT, JETTY, salmon, G, player, cars, peds, cam, SPOTS, PHONES, MISSIONS, keys, startMission, missionPass, PROPS, pickups, S, shots, GOLFF, LM, copShots, helis, SHOPS, PUBS, DEALER, DODS, CRICKET, SPECS, WEAPONS, EDGES, TREES, BUILDINGS, HARD };
+  window.__bb = { FALLS, DINGHY_SPOT, JETTY, salmon, G, player, cars, peds, cam, SPOTS, PHONES, MISSIONS, keys, startMission, missionPass, PROPS, pickups, S, shots, GOLFF, LM, copShots, helis, SHOPS, PUBS, DEALER, DODS, CRICKET, SPECS, WEAPONS, EDGES, TREES, BUILDINGS, HARD, splats, SHED, COW_HOME, NODES };
   requestAnimationFrame(frame);
 }
 boot();

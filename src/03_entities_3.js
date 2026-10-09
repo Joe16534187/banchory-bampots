@@ -4,6 +4,7 @@ const SHIRTS = ['#c8322b', '#2f66b3', '#e8e4da', '#3b3f46', '#1f7a4d', '#d9a521'
 const OUCH = ['Jings!', 'Michty me!', 'Help ma boab!', 'Ya bampot!', 'Watch it, min!', 'Fit ye daein?!', 'Crivvens!', 'Ooyah!', 'Mind yersel!', 'Aye, very good.'];
 const HIKE = ['Fine view!', 'Nearly there.', 'Is it far?', 'Ma legs!', 'Braw day for it.', 'Mind the roots.'];
 const HOWZAT = ['Howzat!', 'Owzat!', 'Catch it!', 'Good shot.', 'No ball!', 'Tea yet?', 'Leg before, surely.', 'Mind the square!'];
+const CHANT = ['Ommmm.', 'Hail the Great Boar.', 'Ommm... is it tea time?', 'By oak and ash and tattie.', 'The stanes are pleased.', 'Hummm.', 'Blessed be the neeps.'];
 const CHAT = ['Fit like?', 'Nae bad.', 'Affa weather.', 'Foos yer doos?', 'Aye, peckin awa.', 'Braw day.', 'Chavvin awa.'];
 function makePed(x, y, kind) {
   const p = { x, y, a: rnd(TAU), kind: kind || 'ped', state: 'walk', t: 0, vx: 0, vy: 0, z: 0, vz: 0, rot: 0, rv: 0, spd: rnd(34, 52), e: null, dir: 1, sw: 1, bub: null, walk: rnd(TAU), flee: 0, chatT: rnd(4, 30),
@@ -17,6 +18,8 @@ function knockPed(p, vx, vy, byPlayer) {
   p.state = 'fly'; p.vx = vx * 0.9 + rnd(-50, 50); p.vy = vy * 0.9 + rnd(-50, 50); p.vz = 150 + s * 0.3; p.z = 1; p.rv = rnd(-14, 14);
   if (p.kind === 'sheep') { say(p, 'BAA!'); if (onScreen(p.x, p.y)) AudioFX.baa(); }
   else if (p.kind === 'turkey') { say(p, 'GOBBLE!'); if (onScreen(p.x, p.y)) AudioFX.gobble(); }
+  else if (p.kind === 'cow') { say(p, 'MOO!'); if (onScreen(p.x, p.y)) AudioFX.moo(vol(p.x, p.y)); }
+  else if (p.kind === 'pig') { say(p, 'WHEEK!'); if (onScreen(p.x, p.y)) AudioFX.squeal(); }
   else { say(p, pick(OUCH)); if (onScreen(p.x, p.y)) AudioFX.bonk(); if (byPlayer) addHeat(s > 100 ? 0.5 : 0.3); }
 }
 function spawnPed() {
@@ -48,15 +51,19 @@ function updatePed(p, dt) {
     }
     return;
   }
-  if (p.state === 'down') { p.t -= dt; if (p.t <= 0) { p.state = p.home ? 'wander' : p.kind === 'stag' || p.stay ? 'wait' : 'walk'; p.flee = 3.5; p.rot = 0; if (p.kind === 'ped' && Math.random() < 0.5) say(p, p.dealer ? pick(['Nae discount for that.', 'Prices just went up.', 'Cheeky.']) : p.cricketer ? pick(['Not cricket, that.', 'Pitch invader!', 'Umpire!']) : pick(['Ya bampot!', 'Polis!', 'Aye, right!', "I'm fine. I'm fine."])); } return; }
+  if (p.state === 'down') { p.t -= dt; if (p.t <= 0) { p.state = p.back || (p.home ? 'wander' : p.kind === 'stag' || p.stay ? 'wait' : 'walk'); p.flee = 3.5; p.rot = 0; if (p.kind === 'ped' && Math.random() < 0.5) say(p, p.dealer ? pick(['Nae discount for that.', 'Prices just went up.', 'Cheeky.']) : p.cricketer ? pick(['Not cricket, that.', 'Pitch invader!', 'Umpire!']) : pick(['Ya bampot!', 'Polis!', 'Aye, right!', "I'm fine. I'm fine."])); } return; }
   if (p.flee > 0) p.flee -= dt;
+  if (p.state === 'stampede') { stampedeStep(p, dt); return; }
+  if (p.state === 'panic') { panicStep(p, dt); return; }
   if (p.state === 'wait') {
-    if (p.post && hyp(p.post.x - p.x, p.post.y - p.y) > 5) { const qx = p.post.x - p.x, qy = p.post.y - p.y, q = hyp(qx, qy); p.x += qx / q * 60 * dt; p.y += qy / q * 60 * dt; p.a = Math.atan2(qy, qx); p.walk += dt * 13; return; }      // back to the stall
-    const dx = player.x - p.x, dy = player.y - p.y; p.a += angDiff(p.a, Math.atan2(dy, dx)) * Math.min(1, dt * 4); p.walk += dt * 2; return;
+    if (p.post && hyp(p.post.x - p.x, p.post.y - p.y) > 5) { const qx = p.post.x - p.x, qy = p.post.y - p.y, q = hyp(qx, qy), ws = p.flee > 0 ? 150 : 60; p.x += qx / q * ws * dt; p.y += qy / q * ws * dt; p.a = Math.atan2(qy, qx); p.walk += dt * 13; return; }      // back to the stall
+    if (p.robe && !G.funeral) { p.chatT -= dt; if (p.chatT <= 0) { p.chatT = rnd(7, 20); if (onScreen(p.x, p.y)) say(p, pick(CHANT)); } }
+    const lk = p.face && hyp(player.x - p.x, player.y - p.y) > 70 ? p.face : player, dx = lk.x - p.x, dy = lk.y - p.y; p.a += angDiff(p.a, Math.atan2(dy, dx)) * Math.min(1, dt * 4); p.walk += dt * 2; return;
   }
   let tx, ty, spd = p.spd * (p.flee > 0 ? 2.5 : 1);
   if (p.state === 'wander') {
     p.t -= dt; if (p.t <= 0 || p.tx === undefined) { p.tx = p.home.x + rnd(30, p.home.w - 30); p.ty = p.home.y + rnd(30, p.home.h - 30); p.t = rnd(3, 9); p.idle = Math.random() < 0.5 ? rnd(1, 4) : 0; }
+    if (p.kind === 'cow') { p.chatT -= dt; if (p.chatT <= 0) { p.chatT = rnd(12, 40); if (onScreen(p.x, p.y)) { say(p, 'Moo.'); AudioFX.moo(0.5 * vol(p.x, p.y)); } } }
     if (p.cricketer) { p.chatT -= dt; if (p.chatT <= 0) { p.chatT = rnd(9, 30); if (onScreen(p.x, p.y)) say(p, pick(HOWZAT)); } }
     if (p.idle > 0 && p.flee <= 0) { p.idle -= dt; return; }
     tx = p.tx; ty = p.ty; if (hyp(tx - p.x, ty - p.y) < 8) { p.t = 0; return; }
@@ -72,13 +79,13 @@ function updatePed(p, dt) {
     }
     const off = (e.hw + (e.pave ? e.pave / 2 + 1 : 7)) * p.sw, tt = Math.min(t + 26, e.len);
     tx = A.x + ux * tt + e.uy * off; ty = A.y + uy * tt - e.ux * off;
-    p.chatT -= dt; if (p.chatT <= 0) { p.chatT = rnd(15, 50); if (onScreen(p.x, p.y) && !player.box) say(p, pick(p.hiker ? HIKE : CHAT)); else if (onScreen(p.x, p.y)) say(p, pick(['Boxhead!', 'Is that a box?', 'Nice hat!', 'Ha!'])); }
+    p.chatT -= dt; if (p.chatT <= 0) { p.chatT = rnd(15, 50); if (onScreen(p.x, p.y) && !player.box) say(p, pick(p.hiker ? HIKE : CHAT)); else if (onScreen(p.x, p.y)) say(p, pick(['Boxman!', 'Is that a box?', 'Nice hat!', 'Ha!'])); }
   }
   const dx = tx - p.x, dy = ty - p.y, d = hyp(dx, dy) || 1;
   p.x += dx / d * spd * dt; p.y += dy / d * spd * dt; p.walk += spd * dt * 0.22;
   p.a += angDiff(p.a, Math.atan2(dy, dx)) * Math.min(1, dt * 8);
-  // leap clear of fast motors
-  for (const c of cars) {
+  // leap clear of fast motors (beasts have not the sense)
+  if (!p.animal) for (const c of cars) {
     const cs = carSpeed(c); if (cs < 130) continue; const rx = p.x - c.x, ry = p.y - c.y, rd = hyp(rx, ry); if (rd > 110 || rd < 1) continue;
     if ((rx * c.vx + ry * c.vy) / (rd * cs) > 0.86 && Math.random() < dt * 5) { const s = (rx * -c.vy + ry * c.vx) > 0 ? 1 : -1; p.state = 'fly'; p.vx = -c.vy / cs * 170 * s; p.vy = c.vx / cs * 170 * s; p.vz = 130; p.z = 1; p.rv = rnd(-6, 6); say(p, pick(OUCH)); break; }
   }
@@ -88,7 +95,7 @@ function collideCarPeds(c) {
   const fx = Math.cos(c.a), fy = Math.sin(c.a), R = c.sp.len / 2 + 12;
   for (const p of peds) {
     if (p.state === 'fly') continue; const dx = p.x - c.x, dy = p.y - c.y; if (Math.abs(dx) > R || Math.abs(dy) > R) continue;
-    for (const o of c.sp.offs) { const ex = p.x - (c.x + fx * o), ey = p.y - (c.y + fy * o), d = hyp(ex, ey); if (d < c.sp.r + 6) { if (cs > (c === player.car ? 55 : c.ai && c.ai.mode === 'chase' ? 90 : 150)) knockPed(p, c.vx, c.vy, c === player.car); else if (d > 0.01) { p.x += ex / d * (c.sp.r + 6 - d); p.y += ey / d * (c.sp.r + 6 - d); } break; } }
+    for (const o of c.sp.offs) { const ex = p.x - (c.x + fx * o), ey = p.y - (c.y + fy * o), d = hyp(ex, ey); if (d < c.sp.r + 6) { if (cs > (c === player.car ? 55 : c.ai && c.ai.mode === 'chase' ? 90 : 150)) { if (p.kind === 'sheep' || p.kind === 'turkey') killAnimal(p, c); else { knockPed(p, c.vx, c.vy, c === player.car); if (p.kind === 'cow') { carImpact(c, 60 + cs * 0.7, p.x, p.y); c.vx *= 0.5; c.vy *= 0.5; } } } else if (d > 0.01) { p.x += ex / d * (c.sp.r + 6 - d); p.y += ey / d * (c.sp.r + 6 - d); } break; } }
   }
 }
 const _pp = [];

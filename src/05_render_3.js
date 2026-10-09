@@ -8,6 +8,8 @@ function drawPerson(p) {
   const fly = p.z > 0, down = isP ? (p.knock > 0 && !fly) : p.state === 'down';
   if (fly) { const s = 1 + p.z * 0.006; ctx.scale(s, s); }
   ctx.rotate(p.a + (fly || down ? p.rot : 0));
+  if (p.kind === 'cow') { drawCow(p, down || fly); ctx.restore(); return; }
+  if (p.kind === 'pig') { drawPig(down || fly, p.walk); ctx.restore(); return; }
   if (p.kind === 'turkey') {
     if (down || fly) { ctx.strokeStyle = '#e8b54a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-1, -3); ctx.lineTo(-1, -10); ctx.moveTo(3, 3); ctx.lineTo(3, 10); ctx.stroke(); }
     ctx.fillStyle = '#5a3a22'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(-1, 0, 10, Math.PI * 0.55, Math.PI * 1.45); ctx.closePath(); ctx.fill();
@@ -38,10 +40,12 @@ function drawPerson(p) {
     if (p.dealer) { ctx.fillStyle = '#3a3229'; ctx.beginPath(); ctx.ellipse(-1.5, 0, 5.6, 9, 0, 0, TAU); ctx.fill(); }             // a long coat with deep pockets
     if (isP && p.armour > 0) { ctx.strokeStyle = '#b08d57'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.ellipse(0, 0, 4.8, 7.8, 0, 0, TAU); ctx.stroke(); }
     if (isP && p.carrying === 'spade') drawSpade(2, 10, 0.1, 1);
+    else if (isP && p.carrying === 'pig') { ctx.save(); ctx.translate(7.5, 5); ctx.rotate(0.35 + Math.sin(G.t * 9) * 0.12); ctx.scale(0.92, 0.92); drawPig(false, G.t * 14); ctx.restore(); }
     else if (isP && p.weapon !== 'fist') { ctx.save(); ctx.translate(p.shove > 0 ? 13 : 7, p.shove > 0 ? 3 : 8.5); ctx.rotate(p.shove > 0 ? -0.5 : 0); ctx.scale(0.8, 0.8); drawWeaponIcon(p.weapon); ctx.restore(); }
     ctx.fillStyle = p.skin; circ(1.2, 0, 4.5); ctx.fill(); ctx.fillStyle = p.hair; ctx.beginPath(); ctx.arc(0.8, 0, 4.7, Math.PI * 0.5, Math.PI * 1.5); ctx.fill();
     if (p.hat === 1) { ctx.fillStyle = p.hatCol; circ(0.8, 0, 4.9); ctx.fill(); ctx.beginPath(); ctx.ellipse(4.6, 0, 2.6, 3.8, 0, 0, TAU); ctx.fill(); }
     else if (p.hat === 2) { ctx.fillStyle = p.hatCol; circ(0.8, 0, 4.9); ctx.fill(); ctx.fillStyle = '#f4f4f4'; circ(0.8, 0, 1.9); ctx.fill(); }
+    if (p.robe) drawRobe(p);
     if (p.kind === 'stag' || p.antlers) { ctx.strokeStyle = '#7a5230'; ctx.lineWidth = 1.8; ctx.beginPath(); for (const q of [-1, 1]) { ctx.moveTo(1, 3.5 * q); ctx.lineTo(3, 9 * q); ctx.lineTo(7, 10.5 * q); ctx.moveTo(3, 9 * q); ctx.lineTo(0, 12 * q); } ctx.stroke(); }
     if (isP && p.box) { ctx.fillStyle = '#b98a54'; ctx.strokeStyle = '#7d5a30'; ctx.lineWidth = 1.2; ctx.fillRect(-6, -7.5, 14, 15); ctx.strokeRect(-6, -7.5, 14, 15); ctx.beginPath(); ctx.moveTo(1, -7.5); ctx.lineTo(1, 7.5); ctx.stroke(); ctx.fillStyle = '#e6d3a8'; ctx.fillRect(-1, -7.5, 4, 15); ctx.fillStyle = '#222'; ctx.fillRect(6, -3, 2, 6); }
   }
